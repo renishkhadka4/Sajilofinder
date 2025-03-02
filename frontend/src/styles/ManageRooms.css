@@ -1,0 +1,204 @@
+/* ManageRooms.css */
+
+/* 🌟 General Styles */
+.manage-rooms-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    background: #f4f7fc;
+}
+
+/* 🌟 Navigation Bar */
+.dashboard-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2c3e50;
+    padding: 15px 20px;
+    border-radius: 8px;
+}
+
+.dashboard-nav h1 {
+    color: #fff;
+    font-size: 22px;
+}
+
+.dashboard-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.dashboard-nav ul li {
+    display: inline;
+}
+
+.dashboard-nav ul li a {
+    text-decoration: none;
+    color: #ecf0f1;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.dashboard-nav ul li a:hover {
+    color: #3498db;
+}
+
+.dashboard-nav button {
+    background: #e74c3c;
+    border: none;
+    padding: 8px 15px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.dashboard-nav button:hover {
+    background: #c0392b;
+}
+
+/* 🌟 Form Section */
+.add-room-form {
+    background: white;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.add-room-form input,
+.add-room-form select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+.add-room-form button {
+    background: #27ae60;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+    width: 100%;
+}
+
+.add-room-form button:hover {
+    background: #218c54;
+}
+
+/* 🌟 Search Bar */
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* 🌟 Room Table */
+.room-table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.room-table th, .room-table td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.room-table th {
+    background: #2c3e50;
+    color: white;
+}
+
+.room-table tr:hover {
+    background: #f1f1f1;
+}
+
+/* 🌟 Action Buttons */
+.room-table button {
+    padding: 6px 12px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+    margin: 5px;
+}
+
+.room-table .edit-btn {
+    background: #3498db;
+    color: white;
+}
+
+.room-table .edit-btn:hover {
+    background: #2980b9;
+}
+
+.room-table .delete-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.room-table .delete-btn:hover {
+    background: #c0392b;
+}
+
+/* 🌟 Image Styling */
+.room-images {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.room-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 5px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    transition: 0.3s;
+}
+
+.room-image:hover {
+    border-color: #3498db;
+    transform: scale(1.1);
+}
+
+/* 🌟 Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-nav {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dashboard-nav ul {
+        flex-direction: column;
+        padding: 10px;
+    }
+
+    .room-table th, .room-table td {
+        font-size: 14px;
+    }
+
+    .add-room-form button {
+        width: auto;
+    }
+}

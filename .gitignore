@@ -1,0 +1,27 @@
+# Ignore the virtual environment
+.venv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore environment variables in backend
+backend/.env
+
+# Ignore environment variables in frontend
+frontend/.env
+
+# Ignore Node.js dependencies
+frontend/node_modules/
+
+# Ignore build artifacts
+frontend/build/
+frontend/.next/
+frontend/.cache/
+
+# Ignore database and other sensitive files
+*.sqlite3
+*.db
+*.log

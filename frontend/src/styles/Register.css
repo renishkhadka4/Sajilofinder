@@ -1,0 +1,125 @@
+/* src/styles/Register.css */
+
+.register-container {
+    display: flex;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  /* Left side with background image */
+  .register-image {
+    flex: 1;
+  }
+  
+  .register-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* Right side with form */
+  .register-form {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: #ffffff;
+  }
+  
+  .register-form .logo {
+    width: 60px;
+    margin-bottom: 20px;
+    align-self: flex-end;
+  }
+  
+  .register-form h2 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333333;
+  }
+  
+  .register-form p {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  
+  .register-form input {
+    width: 100%;
+    padding: 12px 10px;
+    margin-bottom: 15px;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
+  }
+  
+  .register-form input:focus {
+    border-bottom: 1px solid #7b61ff;
+  }
+  
+  .register-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #7b61ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  
+  .register-form button:hover {
+    background-color: #6a52e5;
+  }
+  
+  .register-form .google-signup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  
+  .register-form .google-signup img {
+    width: 20px;
+    margin-right: 10px;
+  }
+  
+  .register-form .login-link {
+    margin-top: 15px;
+    font-size: 14px;
+    text-align: center;
+  }
+  
+  .register-form .login-link a {
+    color: #7b61ff;
+    text-decoration: none;
+  }
+  
+  .register-form .login-link a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Error message styling */
+  .register-form .error {
+    color: red;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  
+  /* Success message styling */
+  .register-form .success {
+    color: green;
+    font-size: 14px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  
