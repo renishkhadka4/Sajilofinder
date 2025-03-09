@@ -1,0 +1,333 @@
+/* Core Layout */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard-main {
+    flex-grow: 1;
+    padding: 32px;
+    margin-left: 250px;
+    transition: margin 0.3s ease;
+}
+
+/* Container Styling */
+.hostel-detail-container {
+    display: flex;
+    gap: 36px;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
+}
+
+/* Left Panel - Details Display */
+.hostel-details {
+    flex: 1;
+    border-right: 1px solid #e9ecef;
+    padding-right: 32px;
+}
+
+.hostel-details h2 {
+    color: #212529;
+    margin-bottom: 24px;
+    font-size: 22px;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.hostel-details p {
+    margin: 16px 0;
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.5;
+}
+
+.hostel-details strong {
+    color: #343a40;
+    display: inline-block;
+    width: 130px;
+    font-weight: 500;
+}
+
+.hostel-details a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.hostel-details a:hover {
+    text-decoration: underline;
+}
+
+/* Right Panel - Edit Form */
+.edit-form {
+    flex: 1.2;
+    background: #ffffff;
+    padding: 0;
+}
+
+.edit-form h2 {
+    color: #212529;
+    margin-bottom: 24px;
+    font-size: 22px;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.edit-form form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Form Elements */
+.edit-form label {
+    font-weight: 500;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    color: #343a40;
+    font-size: 14px;
+}
+
+.edit-form input,
+.edit-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    font-size: 14px;
+    color: #212529;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+.edit-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Checkbox Styling */
+.edit-form input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+.edit-form label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    font-weight: 400;
+    margin-top: 8px;
+}
+
+/* Collapsible Sections */
+.collapsible-header {
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin: 20px 0 8px 0;
+    color: #212529;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.collapsible-header:hover {
+    background-color: #e9ecef;
+}
+
+.collapsible-content {
+    padding: 16px;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    margin-top: -8px;
+    margin-bottom: 20px;
+    background-color: #ffffff;
+}
+
+/* Buttons */
+.update-btn, .delete-btn, .back-btn {
+    padding: 10px 16px;
+    margin-top: 24px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    width: 100%;
+}
+
+.update-btn {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.update-btn:hover {
+    background-color: #0b5ed7;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    margin-top: 12px;
+}
+
+.delete-btn:hover {
+    background-color: #bb2d3b;
+}
+
+.back-btn {
+    background-color: #6c757d;
+    color: white;
+    margin-top: 12px;
+}
+
+.back-btn:hover {
+    background-color: #5c636a;
+}
+
+/* File Upload Styling */
+input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+/* Pricing Fields */
+.pricing-fields {
+    display: flex;
+    gap: 16px;
+}
+
+.pricing-fields input {
+    flex: 1;
+}
+
+/* Facilities Checkbox Grid */
+.facilities-grid,
+.rules-grid,
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+/* Loading State */
+.loading-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    color: #6c757d;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .dashboard-main {
+        margin-left: 0;
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hostel-detail-container {
+        flex-direction: column;
+    }
+    
+    .hostel-details {
+        border-right: none;
+        border-bottom: 1px solid #dee2e6;
+        padding-right: 0;
+        padding-bottom: 24px;
+    }
+    
+    .facilities-grid,
+    .rules-grid,
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pricing-fields {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+/* Form Section Separation */
+.form-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status-active {
+    background-color: #20c997;
+}
+
+.status-inactive {
+    background-color: #adb5bd;
+}
+
+/* Form Field Validation */
+.form-field-error {
+    border-color: #dc3545 !important;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Utility classes */
+.mt-4 {
+    margin-top: 16px;
+}
+
+.mb-4 {
+    margin-bottom: 16px;
+}
+
+.text-muted {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* Focus Visual Indication */
+.edit-form input:focus-visible,
+.edit-form textarea:focus-visible {
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+/* Data section highlighting */
+.data-highlight {
+    background-color: #f8f9fa;
+    padding: 16px;
+    border-radius: 4px;
+    margin: 16px 0;
+}

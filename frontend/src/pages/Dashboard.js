@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 import '../styles/Dashboard.css';
-
+import Sidebar from '../pages/Sidebar';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({ students: 0, rooms: 0, bookedRooms: 0, feedbacks: 0 });
@@ -16,14 +16,6 @@ const Dashboard = () => {
         fetchStats();
         fetchHostels();
     }, []);
-    
-    
-    // Function to refresh dashboard manually
-    const refreshDashboard = () => {
-        fetchStats();
-        fetchHostels();
-    };
-    
 
     const checkUserRole = () => {
         const role = localStorage.getItem('role');
@@ -36,7 +28,6 @@ const Dashboard = () => {
         try {
             const refreshToken = localStorage.getItem('refresh');
             if (!refreshToken) {
-                console.error('No refresh token found');
                 navigate('/login');
                 return null;
             }
@@ -44,7 +35,6 @@ const Dashboard = () => {
             localStorage.setItem('token', response.data.access);
             return response.data.access;
         } catch (error) {
-            console.error('Error refreshing token:', error.response?.data || error.message);
             navigate('/login');
             return null;
         }
@@ -54,35 +44,29 @@ const Dashboard = () => {
         try {
             let token = localStorage.getItem('token');
             if (!token) token = await refreshAccessToken();
-    
-            const response = await api.get('/hostel_owner/dashboard/', { // ✅ Correct endpoint
+            const response = await api.get('/hostel_owner/dashboard/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(response.data);
         } catch (error) {
-            console.error('Error fetching dashboard stats:', error.response?.data || error.message);
+            console.error('Error fetching dashboard stats:', error);
         }
     };
-    
-    
 
     const fetchHostels = async () => {
         try {
             let token = localStorage.getItem('token');
             if (!token) token = await refreshAccessToken();
-    
-            const response = await api.get('/hostel_owner/hostels/', { // ✅ Removed extra /api/
+            const response = await api.get('/hostel_owner/hostels/', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setHostels(response.data);
         } catch (error) {
-            console.error('Error fetching hostels:', error.response?.data || error.message);
+            console.error('Error fetching hostels:', error);
         }
     };
-    
-    
 
-    const chartData = {
+    const barChartData = {
         labels: ['Students', 'Rooms', 'Booked Rooms', 'Feedbacks'],
         datasets: [
             {
@@ -93,58 +77,53 @@ const Dashboard = () => {
         ],
     };
 
+    const pieChartData = {
+        labels: ['Students', 'Rooms', 'Booked Rooms', 'Feedbacks'],
+        datasets: [
+            {
+                data: [stats.students, stats.rooms, stats.bookedRooms, stats.feedbacks],
+                backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#E91E63'],
+            },
+        ],
+    };
+
     return (
-        
-        <div className="dashboard-container">
-            <nav className="dashboard-nav">
-                <h1>Hostel Owner Dashboard</h1>
-                <ul>
-                    <li><Link to="/manage-hostels">Manage Hostels</Link></li>
-                    <li><Link to="/manage-rooms">Manage Rooms</Link></li>
-                    <li><Link to="/bookings">Bookings</Link></li>
-                    <li><Link to="/students">Students</Link></li>
-                    <li><Link to="/feedback">Feedback</Link></li>
-                    <li><button onClick={() => { localStorage.clear(); navigate('/login'); }}>Logout</button></li>
-                </ul>
-            </nav>
-            <button onClick={refreshDashboard} className="refresh-btn">Refresh Dashboard</button>
-
-            <div className="dashboard-stats">
-                <div className="stat-card">
-                    <h2>{stats.students}</h2>
-                    <p>Registered Students</p>
+        <div className="dashboard-layout">
+            <Sidebar />
+            <div className="dashboard-main">
+                <h1 className="dashboard-title">Dashboard</h1>
+                <div className="dashboard-stats">
+                    <div className="stat-card blue">
+                        <h2>{stats.students}</h2>
+                        <p>Registered Students</p>
+                        <button className="view-details">View Details</button>
+                    </div>
+                    <div className="stat-card green">
+                        <h2>{stats.rooms}</h2>
+                        <p>Total Rooms</p>
+                        <button className="view-details">View Details</button>
+                    </div>
+                    <div className="stat-card orange">
+                        <h2>{stats.bookedRooms}</h2>
+                        <p>Booked Rooms</p>
+                        <button className="view-details">View Details</button>
+                    </div>
+                    <div className="stat-card red">
+                        <h2>{stats.feedbacks}</h2>
+                        <p>Feedbacks</p>
+                        <button className="view-details">View Details</button>
+                    </div>
                 </div>
-                <div className="stat-card">
-                    <h2>{stats.rooms}</h2>
-                    <p>Total Rooms</p>
+                <div className="dashboard-charts">
+                    <div className="chart-container">
+                        <h2>Bar Chart</h2>
+                        <Bar data={barChartData} />
+                    </div>
+                    <div className="chart-container">
+                        <h2>Pie Chart</h2>
+                        <Pie data={pieChartData} />
+                    </div>
                 </div>
-                <div className="stat-card">
-                    <h2>{stats.bookedRooms}</h2>
-                    <p>Booked Rooms</p>
-                </div>
-                <div className="stat-card">
-                    <h2>{stats.feedbacks}</h2>
-                    <p>Feedbacks</p>
-                </div>
-            </div>
-
-            <div className="dashboard-chart">
-                <Bar data={chartData} />
-            </div>
-
-            <div className="hostel-list">
-                <h2>My Hostels</h2>
-                {hostels.length > 0 ? (
-                    hostels.map((hostel) => (
-                        <div key={hostel.id} className="hostel-card">
-                            <h3>{hostel.name}</h3>
-                            <p><strong>Address:</strong> {hostel.address}</p>
-                            <p><strong>Description:</strong> {hostel.description}</p>
-                        </div>
-                    ))
-                ) : (
-                    <p>No hostels added yet.</p>
-                )}
             </div>
         </div>
     );
