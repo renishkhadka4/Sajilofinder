@@ -97,22 +97,42 @@ from rest_framework import viewsets, permissions
 from .models import Room
 from .serializers import RoomSerializer
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
+from rest_framework.parsers import MultiPartParser, FormParser
+
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
+    parser_classes = (MultiPartParser, FormParser)  # ✅ Ensure API can accept images
 
-    @action(detail=True, methods=['post'], url_path='upload_images')
-    def upload_images(self, request, pk=None):
-        room = self.get_object()
-        images = request.FILES.getlist('images')
+    def perform_create(self, serializer):
+        """ Save room details along with images """
+        images = self.request.FILES.getlist('images')  # ✅ Retrieve multiple images
+        floor_id = self.request.data.get('floor')  # ✅ Ensure floor ID is included
 
-        if len(images) > 5:
-            return Response({"error": "You can upload a maximum of 5 images per room."}, status=status.HTTP_400_BAD_REQUEST)
+        if not floor_id:
+            raise serializers.ValidationError({"floor": "This field is required."})
 
-        for img in images:
-            RoomImage.objects.create(room=room, image=img)
+        floor = Floor.objects.get(id=floor_id)  # ✅ Ensure floor exists
+        room = serializer.save(floor=floor)  # ✅ Assign floor to room
 
-        return Response({"status": "Images uploaded successfully!"}, status=status.HTTP_201_CREATED)
+        if images:
+            for img in images:
+                RoomImage.objects.create(room=room, image=img)  # ✅ Save images
+
+        return room  
+
+
+from rest_framework.decorators import api_view 
+@api_view(['GET'])
+def get_current_user(request):
+    if request.user.is_authenticated:
+        return Response({
+            "name": request.user.full_name,  # Adjust based on your User model
+            "role": request.user.role  # Adjust based on your User model
+        })
+    return Response({"error": "Unauthorized"}, status=401)
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -206,3 +226,37 @@ class AvailableHostelsView(generics.ListAPIView):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
     permission_classes = [permissions.AllowAny] 
+
+
+from .models import Floor, Room
+from .serializers import FloorSerializer, RoomSerializer
+
+class FloorViewSet(viewsets.ModelViewSet):
+    queryset = Floor.objects.all()
+    serializer_class = FloorSerializer
+
+    def get_queryset(self):
+        """Filter floors by hostel_id if provided in the request."""
+        hostel_id = self.request.query_params.get('hostel_id')
+        if hostel_id:
+            return Floor.objects.filter(hostel_id=hostel_id)  # ✅ Ensure filtering by hostel
+        return super().get_queryset()
+
+@api_view(['GET'])
+def get_floors_by_hostel(request, hostel_id):
+    """ Fetch all floors belonging to a specific hostel """
+    floors = Floor.objects.filter(hostel_id=hostel_id)
+    serializer = FloorSerializer(floors, many=True)
+    return Response(serializer.data, status=200)
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+class HostelOwnerProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user  # Get the authenticated user
+        return Response({"username": user.username, "email": user.email})
+

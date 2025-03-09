@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Hostel, HostelImage, Room, RoomImage, Booking, Feedback
+from .models import Hostel, HostelImage, Room, RoomImage, Booking, Feedback, Floor
 from api.models import CustomUser  #  Import Student model
 
 class HostelImageSerializer(serializers.ModelSerializer):
@@ -15,7 +15,11 @@ class HostelImageSerializer(serializers.ModelSerializer):
         model = HostelImage
         fields = ['id', 'image', 'uploaded_at']
 
-
+class FloorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Floor
+        fields = ['id', 'hostel', 'floor_number', 'description']
+        
 class HostelSerializer(serializers.ModelSerializer):
     images = HostelImageSerializer(many=True, read_only=True)  #  Keep image handling
     owner = serializers.ReadOnlyField(source="owner.username")
@@ -42,11 +46,11 @@ class RoomImageSerializer(serializers.ModelSerializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     images = RoomImageSerializer(many=True, read_only=True)
-    hostel = serializers.PrimaryKeyRelatedField(queryset=Hostel.objects.all())  #  Ensure hostel is required
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
 
     class Meta:
         model = Room
-        fields = ["id", "hostel", "room_number", "room_type", "price", "is_available", "images"]
+        fields = ["id", "floor", "room_number", "room_type", "price", "is_available", "images"]
 
 class BookingSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()

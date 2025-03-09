@@ -82,3 +82,45 @@ class VerifyOTPSerializer(serializers.Serializer):
         user.save()
 
         return data
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'first_name', 'last_name', 'profile_picture']
+
+    def update(self, instance, validated_data):
+        """ Custom update to handle profile picture """
+        instance.username = validated_data.get('username', instance.username)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+
+        # ✅ Handle profile picture upload
+        if 'profile_picture' in validated_data:
+            instance.profile_picture = validated_data['profile_picture']
+
+        instance.save()  # ✅ Save changes
+        return instance
+
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    
+    def validate(self, data):
+        user = self.context['request'].user
+        if not user.check_password(data['old_password']):
+            raise serializers.ValidationError({"old_password": "Incorrect password."})
+        return data
+
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user

@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.timezone import now
 from api.models import CustomUser
+from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 
 class Hostel(models.Model):
     # 🏠 Basic Details
@@ -50,12 +52,26 @@ class Hostel(models.Model):
 
     def __str__(self):
         return self.name
+    
+def get_default_floor():
+    try:
+        return Floor.objects.first().id  # Assign the first existing floor
+    except (ObjectDoesNotExist, AttributeError):
+        return None  # Avoid migration issues if no floors exist yet
 
+class Floor(models.Model):
+    hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE, related_name='floors')
+    floor_number = models.PositiveIntegerField()
+    description = models.TextField(blank=True, null=True)
 
+    class Meta:
+        unique_together = ('hostel', 'floor_number')  # Ensure unique floors per hostel
 
+    def __str__(self):
+        return f"{self.hostel.name} - Floor {self.floor_number}"
 
 class Room(models.Model):
-    hostel = models.ForeignKey('Hostel', on_delete=models.CASCADE, related_name='rooms')
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='rooms', default=get_default_floor)
     room_number = models.CharField(max_length=20, unique=True)
     room_type = models.CharField(max_length=50, choices=[('Single', 'Single'), ('Double', 'Double'), ('Suite', 'Suite')])
     price = models.DecimalField(max_digits=10, decimal_places=2)
