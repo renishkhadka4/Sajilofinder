@@ -16,14 +16,29 @@ import {
   FaUser
 } from "react-icons/fa";
 
-const Sidebar = () => {
+const Sidebar = ({ onToggle }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState({ name: "Loading...", role: "Hostel Owner" });
   const location = useLocation();
 
   useEffect(() => {
     fetchCurrentUser();
+    
+    // Check if user has a sidebar preference stored
+    const storedPreference = localStorage.getItem("sidebarCollapsed");
+    if (storedPreference !== null) {
+      setCollapsed(storedPreference === "true");
+    }
   }, []);
+
+  // Effect to notify parent components when collapsed state changes
+  useEffect(() => {
+    if (onToggle) {
+      onToggle(collapsed);
+    }
+    // Update localStorage when state changes
+    localStorage.setItem("sidebarCollapsed", collapsed);
+  }, [collapsed, onToggle]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -33,21 +48,20 @@ const Sidebar = () => {
             return;
         }
 
-        // ✅ Fetch user details from the correct API
+        // Fetch user details from the correct API
         const response = await api.get("/hostel_owner/profile/", {
             headers: { Authorization: `Bearer ${token}` },
         });
 
         setUser({
-            name: response.data.username || "Unknown Owner",  // ✅ Use username
+            name: response.data.username || "Unknown Owner",
             role: "Hostel Owner",
         });
     } catch (error) {
         console.error("Error fetching user data:", error);
         setUser({ name: "Guest User", role: "Viewer" });
     }
-};
-
+  };
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
