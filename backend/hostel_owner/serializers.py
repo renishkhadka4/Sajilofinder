@@ -1,14 +1,14 @@
 from rest_framework import serializers
 from .models import Hostel, HostelImage, Room, RoomImage, Booking, Feedback, Floor
-from api.models import CustomUser  #  Import Student model
+from api.models import CustomUser
 
 class HostelImageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()  # Fix: Return absolute URL
+    image = serializers.SerializerMethodField()
 
     def get_image(self, obj):
-        request = self.context.get('request')  #  Get the request object
+        request = self.context.get('request')
         if obj.image:
-            return request.build_absolute_uri(obj.image.url)  #  Generate full URL
+            return request.build_absolute_uri(obj.image.url)
         return None
 
     class Meta:
@@ -21,7 +21,7 @@ class FloorSerializer(serializers.ModelSerializer):
         fields = ['id', 'hostel', 'floor_number', 'description']
         
 class HostelSerializer(serializers.ModelSerializer):
-    images = HostelImageSerializer(many=True, read_only=True)  #  Keep image handling
+    images = HostelImageSerializer(many=True, read_only=True)
     owner = serializers.ReadOnlyField(source="owner.username")
 
     class Meta:
@@ -35,9 +35,8 @@ class HostelSerializer(serializers.ModelSerializer):
             "rent_min", "rent_max", "security_deposit",
             "smoking_allowed", "alcohol_allowed", "pets_allowed", "visiting_hours",
             "nearby_colleges", "nearby_markets", "created_at",
-            "images"  #  Ensure images are included
+            "images"
         ]
-
 
 class RoomImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -67,6 +66,24 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = ["id", "student", "room", "check_in", "check_out", "status"]
 
 class FeedbackSerializer(serializers.ModelSerializer):
+    student = serializers.SerializerMethodField()
+    hostel = serializers.SerializerMethodField()
+
+    def get_student(self, obj):
+        return {
+            "id": obj.student.id,
+            "username": obj.student.username,
+            "email": obj.student.email
+        }
+
+    def get_hostel(self, obj):
+        return {
+            "id": obj.hostel.id,
+            "name": obj.hostel.name,
+            "address": obj.hostel.address,
+            "city": obj.hostel.city
+        }
+
     class Meta:
         model = Feedback
-        fields = "__all__"
+        fields = ["id", "student", "hostel", "rating", "comment", "created_at"]

@@ -99,11 +99,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
 
-        # ✅ Handle profile picture upload
+        
         if 'profile_picture' in validated_data:
             instance.profile_picture = validated_data['profile_picture']
 
-        instance.save()  # ✅ Save changes
+        instance.save()  
         return instance
 
 

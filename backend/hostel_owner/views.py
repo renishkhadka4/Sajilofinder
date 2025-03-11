@@ -1,31 +1,19 @@
-from rest_framework import viewsets, permissions
-from .models import Hostel, Room, Booking, Feedback
-from .serializers import HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer
-from .models import Hostel, HostelImage
-from .serializers import HostelSerializer, HostelImageSerializer
-from rest_framework.decorators import action
-from api.models import CustomUser
+from rest_framework import viewsets, permissions, status, generics
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import status
-from .models import Room, RoomImage
-from .serializers import RoomSerializer, RoomImageSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .models import Room, Feedback
-from api.models import CustomUser 
-from django.shortcuts import get_object_or_404 
-from rest_framework.permissions import AllowAny
-# Ensure you have this import if needed
-from rest_framework import generics
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
 
-# Custom Permission to Ensure Only Hostel Owners Can Access
+from .models import Hostel, Room, Booking, Feedback, HostelImage, Floor, RoomImage
+from .serializers import HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer, HostelImageSerializer, FloorSerializer, RoomImageSerializer
+from api.models import CustomUser
+from hostel_owner.models import Feedback, Booking, Room, Floor, Hostel
+from student.models import StudentProfile
+
 class IsHostelOwner(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'HostelOwner'
@@ -46,101 +34,90 @@ class DashboardView(APIView):
             'feedbacks': feedback_count
         })
 
+class FeedbackViewSet(viewsets.ModelViewSet):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-
-from rest_framework.parsers import MultiPartParser, FormParser
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == "HostelOwner":
+            return Feedback.objects.filter(hostel__owner=user)
+        return Feedback.objects.filter(student=user)
 
 class HostelViewSet(viewsets.ModelViewSet):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)  
+    parser_classes = (MultiPartParser, FormParser)
 
     def perform_create(self, serializer):
-        """  Save hostel and images in one request """
-        images = self.request.FILES.getlist('images')  
-
-        print("🚀 Received images:", images)  
-
-        hostel = serializer.save(owner=self.request.user)  
-
-        # ✅ Save images if received
+        images = self.request.FILES.getlist('images')
+        hostel = serializer.save(owner=self.request.user)
         if images:
             for img in images:
                 HostelImage.objects.create(hostel=hostel, image=img)
-                print(f" Saved image: {img.name}")  
-
-        return hostel  
-
 
     @action(detail=True, methods=['post'], url_path='upload_images')
     def upload_images(self, request, pk=None):
-  
-        images = request.FILES.getlist('images')  #  Ensure multiple images are received
-
+        images = request.FILES.getlist('images')
         if not images:
             return Response({"error": "No images received"}, status=status.HTTP_400_BAD_REQUEST)
 
         uploaded_images = []
         for img in images:
-            image_obj = HostelImage.objects.create(hostel=hostel, image=img)  # Save to DB
-            uploaded_images.append(request.build_absolute_uri(image_obj.image.url))  # Return full URL
+            image_obj = HostelImage.objects.create(hostel=hostel, image=img)
+            uploaded_images.append(request.build_absolute_uri(image_obj.image.url))
 
         return Response({
             "status": "Images uploaded successfully!",
             "uploaded_images": uploaded_images
         }, status=status.HTTP_201_CREATED)
 
-
-
-from rest_framework import viewsets, permissions
-from .models import Room
-from .serializers import RoomSerializer
-
-from rest_framework.parsers import MultiPartParser, FormParser
-
-from rest_framework.parsers import MultiPartParser, FormParser
-
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    parser_classes = (MultiPartParser, FormParser)  # ✅ Ensure API can accept images
+    parser_classes = (MultiPartParser, FormParser)
 
     def perform_create(self, serializer):
-        """ Save room details along with images """
-        images = self.request.FILES.getlist('images')  # ✅ Retrieve multiple images
-        floor_id = self.request.data.get('floor')  # ✅ Ensure floor ID is included
-
+        images = self.request.FILES.getlist('images')
+        floor_id = self.request.data.get('floor')
         if not floor_id:
             raise serializers.ValidationError({"floor": "This field is required."})
 
-        floor = Floor.objects.get(id=floor_id)  # ✅ Ensure floor exists
-        room = serializer.save(floor=floor)  # ✅ Assign floor to room
-
+        floor = Floor.objects.get(id=floor_id)
+        room = serializer.save(floor=floor)
         if images:
             for img in images:
-                RoomImage.objects.create(room=room, image=img)  # ✅ Save images
+                RoomImage.objects.create(room=room, image=img)
 
-        return room  
-
-
-from rest_framework.decorators import api_view 
 @api_view(['GET'])
 def get_current_user(request):
     if request.user.is_authenticated:
         return Response({
-            "name": request.user.full_name,  # Adjust based on your User model
-            "role": request.user.role  # Adjust based on your User model
+            "name": request.user.full_name,
+            "role": request.user.role
         })
     return Response({"error": "Unauthorized"}, status=401)
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'HostelOwner':
+            return Booking.objects.filter(room__floor__hostel__owner=user)
+        elif user.role == 'Student':
+            return Booking.objects.filter(student=user)
+        return Booking.objects.none()
 
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
         booking = self.get_object()
+        if booking.status != 'pending':
+            return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+
         booking.status = 'confirmed'
         booking.save()
         return Response({'message': 'Booking approved'}, status=status.HTTP_200_OK)
@@ -148,48 +125,24 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def reject(self, request, pk=None):
         booking = self.get_object()
+        if booking.status != 'pending':
+            return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+
         booking.status = 'rejected'
         booking.save()
         return Response({'message': 'Booking rejected'}, status=status.HTTP_200_OK)
 
-
-class FeedbackViewSet(viewsets.ModelViewSet):
-    queryset = Feedback.objects.all()
-    serializer_class = FeedbackSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        if self.request.user.role == "HostelOwner":
-            return Feedback.objects.filter(booking__room__hostel__owner=self.request.user)
-        return Feedback.objects.filter(booking__student=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save()
-
-from rest_framework.decorators import api_view
-
 @api_view(['GET'])
 def get_confirmed_students(request, hostel_id):
-    """ Fetch students who have confirmed bookings in a particular hostel """
-    
-    # Ensure the hostel exists
     hostel = get_object_or_404(Hostel, id=hostel_id)
-
-    # Get confirmed bookings associated with rooms in this hostel
     confirmed_bookings = Booking.objects.filter(room__hostel=hostel, status='confirmed')
-
-    # Get distinct students who have booked rooms
     students = [booking.student for booking in confirmed_bookings]
 
-    # Serialize student data
     student_data = [
         {"id": student.id, "name": student.username, "email": student.email} 
         for student in students
     ]
-
     return Response({"students": student_data}, status=200)
-
-
 
 def submit_feedback(request):
     student = request.user
@@ -203,60 +156,97 @@ def submit_feedback(request):
     feedback = Feedback.objects.create(student=student, hostel_id=hostel_id, rating=rating, comment=comment)
     return Response({'message': 'Feedback submitted'}, status=status.HTTP_201_CREATED)
 
-
-
-
-from rest_framework.decorators import api_view
-
-@api_view(['GET'])
-def GetHostelStudents(request, hostel_id):
-    """ Fetch students who have confirmed bookings in a particular hostel """
-    hostel = get_object_or_404(Hostel, id=hostel_id)
-
-    # Get confirmed bookings for this hostel
-    bookings = Booking.objects.filter(room__hostel=hostel, status='confirmed')
-    students = [booking.student for booking in bookings]
-
-    student_data = [{"id": student.id, "name": student.username, "email": student.email} for student in students]
-
-    return Response({"students": student_data}, status=200)
-
-
 class AvailableHostelsView(generics.ListAPIView):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
-    permission_classes = [permissions.AllowAny] 
-
-
-from .models import Floor, Room
-from .serializers import FloorSerializer, RoomSerializer
+    permission_classes = [permissions.AllowAny]
 
 class FloorViewSet(viewsets.ModelViewSet):
     queryset = Floor.objects.all()
     serializer_class = FloorSerializer
 
     def get_queryset(self):
-        """Filter floors by hostel_id if provided in the request."""
         hostel_id = self.request.query_params.get('hostel_id')
         if hostel_id:
-            return Floor.objects.filter(hostel_id=hostel_id)  # ✅ Ensure filtering by hostel
+            return Floor.objects.filter(hostel_id=hostel_id)
         return super().get_queryset()
 
 @api_view(['GET'])
 def get_floors_by_hostel(request, hostel_id):
-    """ Fetch all floors belonging to a specific hostel """
     floors = Floor.objects.filter(hostel_id=hostel_id)
     serializer = FloorSerializer(floors, many=True)
     return Response(serializer.data, status=200)
 
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 class HostelOwnerProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        user = request.user  # Get the authenticated user
+        user = request.user
         return Response({"username": user.username, "email": user.email})
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def GetHostelStudents(request, hostel_id):
+    if request.user.role != "HostelOwner":
+        return Response({"error": "Unauthorized"}, status=403)
+
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=404)
+
+    floors = Floor.objects.filter(hostel=hostel)
+    rooms = Room.objects.filter(floor__in=floors)
+    confirmed_bookings = Booking.objects.filter(room__floor__hostel=hostel, status='confirmed')
+
+    students = []
+    for booking in confirmed_bookings:
+        student = booking.student
+        student_data = {
+            "id": student.id,
+            "username": student.username,
+            "email": student.email
+        }
+        
+        student_profile = StudentProfile.objects.filter(user=student).first()
+        student_data["phone"] = student_profile.phone_number if student_profile else None
+
+        students.append(student_data)
+
+    return Response({"students": students}, status=200)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Booking, Hostel
+from api.models import CustomUser
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_hostel_students(request):
+    """ Fetch all students across all hostels owned by the logged-in hostel owner """
+    
+    if request.user.role != "HostelOwner":
+        return Response({"error": "Only hostel owners can access this data."}, status=403)
+
+    # Get hostels owned by the logged-in user
+    hostels = Hostel.objects.filter(owner=request.user)
+    
+    # Get bookings where students have confirmed rooms in these hostels
+    bookings = Booking.objects.filter(room__floor__hostel__in=hostels, status="confirmed").select_related("student")
+
+    students = [
+        {
+            "id": booking.student.id,
+            "username": booking.student.username,
+            "email": booking.student.email,
+            "phone": booking.student.student_profile.phone_number if hasattr(booking.student, 'student_profile') else "N/A",
+            "room_number": booking.room.room_number if booking.room else "No Room",
+            "check_in": booking.check_in,
+            "check_out": booking.check_out,
+            "status": booking.status,
+        }
+        for booking in bookings
+    ]
+
+    return Response({"students": students}, status=200)

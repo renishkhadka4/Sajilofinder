@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'api',
     'hostel_owner',
     'student',
+    'django_extensions',
 ]
 
 #  Authentication

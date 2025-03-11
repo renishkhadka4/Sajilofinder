@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from hostel_owner.models import Booking, Room, Hostel
+from hostel_owner.models import Booking, Room, Hostel, Feedback
 from .models import StudentProfile
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -12,10 +12,20 @@ class BookingSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
 
     def get_room(self, obj):
-        return {"id": obj.room.id, "room_number": obj.room.room_number, "hostel": obj.room.hostel.name}
+        if obj.room and obj.room.floor and obj.room.floor.hostel:
+            return {
+                "id": obj.room.id,
+                "room_number": obj.room.room_number,
+                "hostel": obj.room.floor.hostel.name
+            }
+        return None
 
     def get_student(self, obj):
-        return {"id": obj.student.id, "username": obj.student.username, "email": obj.student.email}
+        return {
+            "id": obj.student.id,
+            "username": obj.student.username,
+            "email": obj.student.email
+        }
 
     class Meta:
         model = Booking
@@ -24,4 +34,9 @@ class BookingSerializer(serializers.ModelSerializer):
 class HostelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hostel
+        fields = '__all__'
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
         fields = '__all__'
