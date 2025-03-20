@@ -30,3 +30,6 @@ class CustomUser(AbstractUser):
 
     def is_student(self):
         return self.role == self.STUDENT
+    
+
+    unread_messages = models.IntegerField(default=0)  # ✅ Track unread messages

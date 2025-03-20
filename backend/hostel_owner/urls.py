@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     HostelViewSet, RoomViewSet, BookingViewSet, FeedbackViewSet, DashboardView,
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
-    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students 
+    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView
 )
 
 router = DefaultRouter()
@@ -15,7 +15,7 @@ router.register(r'floors', FloorViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('dashboard/', DashboardView.as_view(), name='dashboard'),
+
     path('students/feedback/', submit_feedback),
     path('hostels/<int:hostel_id>/students/', GetHostelStudents, name='hostel-students'),
     path('hostels/<int:hostel_id>/students/', get_confirmed_students, name='confirmed-students'),
@@ -23,4 +23,8 @@ urlpatterns = [
     path("auth/user/", get_current_user),
     path('profile/', HostelOwnerProfileView.as_view(), name='hostel-owner-profile'),
     path("students/", get_all_hostel_students, name="get_all_hostel_students"),
+    path("dashboard/", DashboardView.as_view(), name="hostel_owner_dashboard"),
+    path("download-report/<str:report_type>/<str:format_type>/", DownloadReportView.as_view(), name="download_report"),
+    path("chat-history/<int:hostel_id>/", ChatHistoryView.as_view(), name="chat_history"),
+    
 ]

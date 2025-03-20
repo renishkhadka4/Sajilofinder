@@ -6,7 +6,7 @@ from rest_framework import status
 from hostel_owner.models import Booking, Room, Hostel
 from .models import StudentProfile
 from .serializers import StudentProfileSerializer, BookingSerializer, HostelSerializer
-
+from rest_framework import serializers
 # ✅ Search & Filter Hostels
 class HostelSearchView(ListAPIView):
     queryset = Hostel.objects.all()
@@ -81,6 +81,28 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from hostel_owner.models import Room, Booking
 from student.serializers import BookingSerializer
+from rest_framework import serializers  # ✅ Fix missing import
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from hostel_owner.models import Booking
+from student.serializers import BookingSerializer
+from django.core.mail import send_mail
+from django.conf import settings
+import logging
+
+from rest_framework import viewsets, status, serializers
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.response import Response
+from django.core.mail import send_mail
+from django.conf import settings
+import logging
+from hostel_owner.models import Booking, Room
+from student.serializers import BookingSerializer
+from rest_framework.permissions import IsAuthenticated
+
+# ✅ Enable logging
+logger = logging.getLogger(__name__)
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -88,6 +110,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        """ ✅ Ensure room exists before booking """
         room_id = self.request.data.get("room_id")
 
         if not room_id:
@@ -100,28 +123,69 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         serializer.save(student=self.request.user, room=room)
 
-
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
-        """ ✅ Hostel Owner Approves Booking ✅ """
-        booking = self.get_object()
-        if booking.status != 'pending':
-            return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        """ ✅ Hostel Owner Approves Booking & Sends Email ✅ """
+        try:
+            booking = self.get_object()
 
-        booking.status = 'confirmed'
-        booking.save()
-        return Response({'message': 'Booking approved'}, status=status.HTTP_200_OK)
+            if booking.status != 'pending':
+                return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            booking.status = 'confirmed'
+            booking.save()
+
+            print(f"✅ Booking {booking.id} confirmed. Calling send_booking_email()")  # ✅ Debugging Output
+            self.send_booking_email(booking, "Confirmed")  # ✅ Call function directly
+
+            return Response({'message': 'Booking approved, email sent!'}, status=status.HTTP_200_OK)
+
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['patch'])
     def reject(self, request, pk=None):
         """ ❌ Hostel Owner Rejects Booking ❌ """
-        booking = self.get_object()
-        if booking.status != 'pending':
-            return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            booking = self.get_object()
 
-        booking.status = 'rejected'
-        booking.save()
-        return Response({'message': 'Booking rejected'}, status=status.HTTP_200_OK)
+            if booking.status != 'pending':
+                return Response({"error": "Booking already processed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            booking.status = 'rejected'
+            booking.save()
+
+            print(f"❌ Booking {booking.id} rejected. Calling send_booking_email()")  # ✅ Debugging Output
+            self.send_booking_email(booking, "Rejected")  # ✅ Call function directly
+
+            return Response({'message': 'Booking rejected, email sent!'}, status=status.HTTP_200_OK)
+
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def send_booking_email(self, booking, status):
+        """ ✅ Send email to student when booking is confirmed/rejected ✅ """
+        try:
+            recipient_email = booking.student.email
+
+            logger.info(f"📧 Attempting to send email to {recipient_email} - Status: {status}")
+            print(f"📧 Attempting to send email to {recipient_email} - Status: {status}")  # ✅ Debugging Output
+
+            subject = f"Your Booking has been {status}"
+            message = f"Hello {booking.student.username},\n\n" \
+                      f"Your booking for {booking.room.floor.hostel.name} has been {status}.\n" \
+                      f"Check-in: {booking.check_in}\nCheck-out: {booking.check_out}\n" \
+                      f"Thank you for using SajiloFinder!"
+
+            send_mail(subject, message, settings.EMAIL_HOST_USER, [recipient_email], fail_silently=False)
+
+            logger.info(f"✅ Booking email successfully sent to {recipient_email} - Status: {status}")
+            print(f"✅ Booking email successfully sent to {recipient_email} - Status: {status}")  # ✅ Debugging Output
+
+        except Exception as e:
+            logger.error(f"❌ Error sending booking email to {recipient_email}: {str(e)}")
+            print(f"❌ Error sending booking email to {recipient_email}: {str(e)}")  # ✅ Debugging Output
+
 
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated

@@ -36,7 +36,22 @@ INSTALLED_APPS = [
     'hostel_owner',
     'student',
     'django_extensions',
+    'channels',
+    
+    
 ]
+
+# Add ASGI application reference
+ASGI_APPLICATION = "backend.asgi.application"
+
+# Configure Channels with Redis
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Use Redis in production
+    },
+}
+
+
 
 #  Authentication
 AUTH_USER_MODEL = 'api.CustomUser'
@@ -135,13 +150,22 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-#  Email settings (Use environment variables for security)
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # ✅ Load environment variables from .env file
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your-email@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your-email-password')
+
+# ✅ Use your email credentials
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'sajilofinder@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'jfyfbcpxtmtrxrnx')  # ✅ App Password
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # ✅ Set default sender email
+
 
 #  Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
