@@ -7,7 +7,7 @@ from .views import (
     StudentProfileView,
     BookHostelView,
     BookingViewSet,
-    submit_feedback
+    submit_feedback,get_student_notifications
 )
 
 router = DefaultRouter()
@@ -21,4 +21,5 @@ urlpatterns = [
     path("students/profile/", StudentProfileView.as_view(), name="student-profile"),
     path("bookings/", BookHostelView.as_view(), name="book-hostel"),
     path("feedback/", submit_feedback, name="submit-feedback"),
+    path('notifications/', get_student_notifications, name='student-notifications'),
 ]

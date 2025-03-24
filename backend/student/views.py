@@ -276,3 +276,25 @@ def submit_feedback(request):
     )
 
     return Response({'message': 'Feedback submitted successfully!'}, status=status.HTTP_201_CREATED)
+
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Notification
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_student_notifications(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    data = [
+        {
+            'id': n.id,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at
+        }
+        for n in notifications
+    ]
+    return Response(data)

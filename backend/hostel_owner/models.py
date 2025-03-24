@@ -33,7 +33,8 @@ class Hostel(models.Model):
     nearby_colleges = models.TextField(blank=True, null=True)
     nearby_markets = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    cancellation_policy = models.JSONField(default=dict)
+    
     def __str__(self):
         return self.name
 
@@ -61,9 +62,16 @@ class Room(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_available = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"Room {self.room_number} - {'Available' if self.is_available else 'Unavailable'}"
+
 class RoomImage(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='room_images/')
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position']
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -86,6 +94,7 @@ class Feedback(models.Model):
     rating = models.IntegerField()
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    reply = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.student.username} - {self.hostel.name} ({self.rating})"
@@ -94,6 +103,10 @@ class HostelImage(models.Model):
     hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='hostel_images/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position']
 
     def __str__(self):
         return f"{self.hostel.name} - {self.image.name}"
@@ -112,3 +125,13 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"Chat from {self.sender.username} to {self.receiver.username}"
+
+
+class OwnerNotification(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification to {self.user.username}"

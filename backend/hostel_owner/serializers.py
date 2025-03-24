@@ -63,7 +63,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id", "student", "room", "check_in", "check_out", "status"]
+        fields = ["id", "student", "room", "check_in", "check_out", "status", ]
 
 class FeedbackSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
@@ -86,4 +86,13 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Feedback
-        fields = ["id", "student", "hostel", "rating", "comment", "created_at"]
+        fields = ["id", "student", "hostel", "rating", "comment", "reply", "created_at"]
+
+
+from rest_framework import serializers
+from .models import OwnerNotification
+
+class OwnerNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OwnerNotification
+        fields = "__all__"

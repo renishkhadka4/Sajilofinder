@@ -73,12 +73,30 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         if user.role == "HostelOwner":
             return Feedback.objects.filter(hostel__owner=user)
         return Feedback.objects.filter(student=user)
+    
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        reply = request.data.get("reply", "")
+        instance.reply = reply
+        instance.save()
 
+        # Optionally trigger notification
+        from student.models import Notification
+        Notification.objects.create(
+            user=instance.student,
+            message=f"The owner replied to your feedback on {instance.hostel.name}."
+        )
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 class HostelViewSet(viewsets.ModelViewSet):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
@@ -87,9 +105,12 @@ class HostelViewSet(viewsets.ModelViewSet):
             for img in images:
                 HostelImage.objects.create(hostel=hostel, image=img)
 
-    @action(detail=True, methods=['post'], url_path='upload_images')
+    @action(detail=True, methods=['post'], url_path='upload_images')  # ✅ Fix URL path
     def upload_images(self, request, pk=None):
+        """ ✅ API to upload multiple images for a hostel ✅ """
+        hostel = self.get_object()
         images = request.FILES.getlist('images')
+
         if not images:
             return Response({"error": "No images received"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -99,14 +120,85 @@ class HostelViewSet(viewsets.ModelViewSet):
             uploaded_images.append(request.build_absolute_uri(image_obj.image.url))
 
         return Response({
-            "status": "Images uploaded successfully!",
+            "message": f"{len(uploaded_images)} images uploaded successfully!",
             "uploaded_images": uploaded_images
         }, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'], url_path='bulk_upload_images')  
+    def bulk_upload_images(self, request, pk=None):
+        """ ✅ API to upload multiple images at once for a hostel ✅ """
+        hostel = self.get_object()
+        images = request.FILES.getlist('images')
 
+        if not images:
+            return Response({"error": "No images received"}, status=status.HTTP_400_BAD_REQUEST)
+
+        uploaded_images = []
+        for img in images:
+            image_obj = HostelImage.objects.create(hostel=hostel, image=img)
+            uploaded_images.append({
+                "id": image_obj.id,
+                "image_url": request.build_absolute_uri(image_obj.image.url)
+            })
+
+        return Response({
+            "message": f"{len(uploaded_images)} images uploaded successfully!",
+            "uploaded_images": uploaded_images
+        }, status=status.HTTP_201_CREATED)
+    
+
+    @action(detail=True, methods=['delete'], url_path='bulk_delete_images')  
+    def bulk_delete_images(self, request, pk=None):
+        """ ❌ Delete multiple images from a hostel ❌ """
+        hostel = self.get_object()
+        image_ids = request.data.get('image_ids', [])
+
+        if not isinstance(image_ids, list) or len(image_ids) == 0:
+            return Response({"error": "image_ids must be a list of image IDs"}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted_count, _ = HostelImage.objects.filter(id__in=image_ids, hostel=hostel).delete()
+
+        return Response({"message": f"{deleted_count} images deleted"}, status=status.HTTP_200_OK)
+    
+
+    @action(detail=True, methods=['patch'])
+    def set_cancellation_policy(self, request, pk=None):
+        """ ✅ API to set a hostel's cancellation policy ✅ """
+        hostel = self.get_object()
+        policy = request.data.get("cancellation_policy")
+
+        if not isinstance(policy, dict):
+            return Response({"error": "cancellation_policy must be a JSON object"}, status=status.HTTP_400_BAD_REQUEST)
+
+        hostel.cancellation_policy = policy
+        hostel.save()
+
+        return Response({"message": "Cancellation policy updated successfully", "policy": hostel.cancellation_policy},
+                        status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='reorder_images')
+    def reorder_images(self, request, pk=None):
+        hostel = self.get_object()
+        image_order = request.data.get("image_order", [])
+
+        if not isinstance(image_order, list):
+            return Response({"error": "image_order must be a list of image IDs"}, status=400)
+
+        for position, img_id in enumerate(image_order):
+            try:
+                image = HostelImage.objects.get(id=img_id, hostel=hostel)
+                image.position = position
+                image.save()
+            except HostelImage.DoesNotExist:
+                continue
+
+        return Response({"message": "Image order updated successfully."}, status=200)
+
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
@@ -119,6 +211,72 @@ class RoomViewSet(viewsets.ModelViewSet):
         if images:
             for img in images:
                 RoomImage.objects.create(room=room, image=img)
+    @action(detail=True, methods=['patch'], url_path='update_availability')  # ✅ Fix URL path
+    def update_availability(self, request, pk=None):
+        """ ✅ API to mark a room as available/unavailable ✅ """
+        try:
+            room = self.get_object()
+            is_available = request.data.get('is_available', None)
+
+            if is_available is None:
+                return Response({"error": "is_available field is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            room.is_available = str(is_available).lower() == 'true'
+            room.save()
+
+            return Response({'message': f'Room availability updated to {"Available" if room.is_available else "Unavailable"}'},
+                            status=status.HTTP_200_OK)
+        except Room.DoesNotExist:
+            return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=False, methods=['post'], url_path='bulk_add')
+    def bulk_add_rooms(self, request):
+        """ ✅ API to add multiple rooms at once under a specific floor ✅ """
+        floor_id = request.data.get('floor_id', None)
+        rooms_data = request.data.get('rooms', [])
+
+        if not floor_id:
+            return Response({"error": "floor_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            floor = Floor.objects.get(id=floor_id)
+        except Floor.DoesNotExist:
+            return Response({"error": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not isinstance(rooms_data, list) or len(rooms_data) == 0:
+            return Response({"error": "rooms must be a list of room details"}, status=status.HTTP_400_BAD_REQUEST)
+
+        added_rooms = []
+        errors = []
+
+        for room_data in rooms_data:
+            room_number = room_data.get("room_number")
+            room_type = room_data.get("room_type")
+            price = room_data.get("price")
+
+            if not room_number or not room_type or not price:
+                errors.append({"error": "Missing required fields", "room_data": room_data})
+                continue  # Skip invalid room entry
+
+            if Room.objects.filter(floor=floor, room_number=room_number).exists():
+                errors.append({"error": f"Room {room_number} already exists in this floor"})
+                continue  # Skip duplicate room entry
+
+            # Create the room
+            room = Room.objects.create(
+                floor=floor,
+                room_number=room_number,
+                room_type=room_type,
+                price=price
+            )
+            added_rooms.append(RoomSerializer(room).data)
+
+        if errors:
+            return Response({"message": "Some rooms could not be added", "added_rooms": added_rooms, "errors": errors}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": f"{len(added_rooms)} rooms added successfully", "added_rooms": added_rooms}, 
+                        status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
 def get_current_user(request):
@@ -133,6 +291,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from hostel_owner.models import Booking
+from django.utils import timezone
 
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
@@ -182,9 +341,32 @@ class BookingViewSet(viewsets.ModelViewSet):
             send_booking_email(booking, "Rejected")  # ✅ Call function directly
 
             return Response({'message': 'Booking rejected, email sent!'}, status=status.HTTP_200_OK)
-
+    
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=True, methods=['patch'])
+    def cancel_booking(self, request, pk=None):
+        """ ✅ API to cancel a booking and apply refund policy ✅ """
+        booking = self.get_object()
+        hostel = booking.room.floor.hostel
+        policy = hostel.cancellation_policy
+
+        if booking.status != "confirmed":
+            return Response({"error": "Only confirmed bookings can be canceled"}, status=status.HTTP_400_BAD_REQUEST)
+
+        days_before_checkin = (booking.check_in - timezone.now().date()).days
+
+        refund = 0
+        if days_before_checkin >= policy.get("full_refund_days", 0):
+            refund = 100  # Full refund
+        elif days_before_checkin >= policy.get("partial_refund_days", 0):
+            refund = policy.get("partial_refund_percentage", 0)  # Partial refund
+
+        booking.status = "canceled"
+        booking.save()
+
+        return Response({"message": f"Booking canceled with {refund}% refund"}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def get_confirmed_students(request, hostel_id):
@@ -278,20 +460,30 @@ from api.models import CustomUser
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_all_hostel_students(request):
-    """ Fetch all students across all hostels owned by the logged-in hostel owner """
-    
     if request.user.role != "HostelOwner":
         return Response({"error": "Only hostel owners can access this data."}, status=403)
 
-    # Get hostels owned by the logged-in user
     hostels = Hostel.objects.filter(owner=request.user)
-    
-    # Get bookings where students have confirmed rooms in these hostels
-    bookings = Booking.objects.filter(room__floor__hostel__in=hostels, status="confirmed").select_related("student")
+    bookings = Booking.objects.filter(room__floor__hostel__in=hostels).select_related(
+        "student", 
+        "room", 
+        "room__floor", 
+        "room__floor__hostel"
+    )
 
-    students = [
-        {
-            "id": booking.student.id,
+    students = []
+    for booking in bookings:
+        # Make sure the hostel data is properly structured
+        hostel_data = None
+        if booking.room and booking.room.floor and booking.room.floor.hostel:
+            hostel_data = {
+                "id": booking.room.floor.hostel.id,
+                "name": booking.room.floor.hostel.name
+            }
+        
+        students.append({
+            "id": booking.id,  # Changed to booking ID for actions
+            "student_id": booking.student.id,
             "username": booking.student.username,
             "email": booking.student.email,
             "phone": booking.student.student_profile.phone_number if hasattr(booking.student, 'student_profile') else "N/A",
@@ -299,11 +491,12 @@ def get_all_hostel_students(request):
             "check_in": booking.check_in,
             "check_out": booking.check_out,
             "status": booking.status,
-        }
-        for booking in bookings
-    ]
+            "hostel": hostel_data  # Now always has a consistent structure
+        })
 
     return Response({"students": students}, status=200)
+
+
 
 
 from rest_framework.views import APIView
@@ -314,10 +507,9 @@ from datetime import datetime, timedelta
 from .models import Booking, Room, Feedback, Hostel
 from api.models import CustomUser
 
+from datetime import datetime
+
 class DashboardView(APIView):
-    """ 
-    API for Hostel Owners to get dashboard analytics 
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -325,49 +517,50 @@ class DashboardView(APIView):
         if user.role != "HostelOwner":
             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Total Bookings
-        total_bookings = Booking.objects.filter(room__floor__hostel__owner=user).count()
-        pending_bookings = Booking.objects.filter(room__floor__hostel__owner=user, status="pending").count()
-        confirmed_bookings = Booking.objects.filter(room__floor__hostel__owner=user, status="confirmed").count()
-        rejected_bookings = Booking.objects.filter(room__floor__hostel__owner=user, status="rejected").count()
+        # ✅ Get optional query parameters
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
 
-        # Monthly Revenue Breakdown (Last 6 Months)
-        today = datetime.today()
-        six_months_ago = today - timedelta(days=180)
+        bookings = Booking.objects.filter(room__floor__hostel__owner=user)
+        if start_date and end_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d").date()
+                end = datetime.strptime(end_date, "%Y-%m-%d").date()
+                bookings = bookings.filter(check_in__range=(start, end))
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+
+        pending = bookings.filter(status="pending").count()
+        confirmed = bookings.filter(status="confirmed").count()
+        rejected = bookings.filter(status="rejected").count()
+
+        # Monthly revenue
         revenue_per_month = (
-            Booking.objects.filter(
-                room__floor__hostel__owner=user, status="confirmed", check_in__gte=six_months_ago
-            )
+            bookings.filter(status="confirmed")
             .extra(select={"month": "EXTRACT(MONTH FROM check_in)"})
             .values("month")
             .annotate(total_revenue=Sum("room__price"))
             .order_by("month")
         )
 
-        # Average Ratings & Feedback Count
         avg_rating = Feedback.objects.filter(hostel__owner=user).aggregate(Avg("rating"))["rating__avg"] or 0
         total_feedbacks = Feedback.objects.filter(hostel__owner=user).count()
-
-        # Room Statistics
         total_rooms = Room.objects.filter(floor__hostel__owner=user).count()
-        booked_rooms = Booking.objects.filter(room__floor__hostel__owner=user, status="confirmed").count()
+        booked_rooms = bookings.filter(status="confirmed").count()
         available_rooms = total_rooms - booked_rooms
 
-        return Response(
-            {
-                "total_bookings": total_bookings,
-                "pending_bookings": pending_bookings,
-                "confirmed_bookings": confirmed_bookings,
-                "rejected_bookings": rejected_bookings,
-                "revenue_per_month": list(revenue_per_month),
-                "avg_rating": round(avg_rating, 1),
-                "total_feedbacks": total_feedbacks,
-                "total_rooms": total_rooms,
-                "booked_rooms": booked_rooms,
-                "available_rooms": available_rooms,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({
+            "total_bookings": bookings.count(),
+            "pending_bookings": pending,
+            "confirmed_bookings": confirmed,
+            "rejected_bookings": rejected,
+            "revenue_per_month": list(revenue_per_month),
+            "avg_rating": round(avg_rating, 1),
+            "total_feedbacks": total_feedbacks,
+            "total_rooms": total_rooms,
+            "booked_rooms": booked_rooms,
+            "available_rooms": available_rooms,
+        }, status=200)
 
 
 
@@ -590,3 +783,26 @@ def send_chat_email_notification(sender, receiver, message):
         logger.error(f"❌ Error sending chat notification email to {recipient_email}: {str(e)}")
         print(f"❌ Error sending chat notification email to {recipient_email}: {str(e)}")  # ✅ Debugging Output
 
+
+
+from student.models import Notification  # Import from student app
+
+def notify_student_on_reply(feedback):
+    Notification.objects.create(
+        user=feedback.student,
+        message=f"The owner replied to your feedback on {feedback.hostel.name}."
+    )
+
+
+from .models import OwnerNotification
+from .serializers import OwnerNotificationSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+class OwnerNotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = OwnerNotification.objects.filter(user=request.user).order_by("-created_at")
+        serializer = OwnerNotificationSerializer(notifications, many=True)
+        return Response(serializer.data)

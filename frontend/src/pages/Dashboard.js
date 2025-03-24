@@ -6,15 +6,27 @@ import 'chart.js/auto';
 import '../styles/Dashboard.css';
 import Sidebar from '../pages/Sidebar';
 
+
 const Dashboard = () => {
-    const [stats, setStats] = useState({ students: 0, rooms: 0, bookedRooms: 0, feedbacks: 0 });
-    const [hostels, setHostels] = useState([]);
+    const [stats, setStats] = useState({
+        total_bookings: 0,
+        pending_bookings: 0,
+        confirmed_bookings: 0,
+        rejected_bookings: 0,
+        revenue_per_month: [],
+        avg_rating: 0,
+        total_feedbacks: 0,
+        total_rooms: 0,
+        booked_rooms: 0,
+        available_rooms: 0,
+    });
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
         checkUserRole();
         fetchStats();
-        fetchHostels();
     }, []);
 
     const checkUserRole = () => {
@@ -44,7 +56,12 @@ const Dashboard = () => {
         try {
             let token = localStorage.getItem('token');
             if (!token) token = await refreshAccessToken();
-            const response = await api.get('/hostel_owner/dashboard/', {
+    
+            const params = new URLSearchParams();
+            if (startDate) params.append("start_date", startDate);
+            if (endDate) params.append("end_date", endDate);
+    
+            const response = await api.get(`/hostel_owner/dashboard/?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(response.data);
@@ -52,37 +69,26 @@ const Dashboard = () => {
             console.error('Error fetching dashboard stats:', error);
         }
     };
+    
 
-    const fetchHostels = async () => {
-        try {
-            let token = localStorage.getItem('token');
-            if (!token) token = await refreshAccessToken();
-            const response = await api.get('/hostel_owner/hostels/', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setHostels(response.data);
-        } catch (error) {
-            console.error('Error fetching hostels:', error);
-        }
-    };
-
-    const barChartData = {
-        labels: ['Students', 'Rooms', 'Booked Rooms', 'Feedbacks'],
+    const bookingPieData = {
+        labels: ['Pending', 'Confirmed', 'Rejected'],
         datasets: [
             {
-                label: 'Dashboard Stats',
-                data: [stats.students, stats.rooms, stats.bookedRooms, stats.feedbacks],
-                backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#E91E63'],
+                label: 'Booking Status',
+                data: [stats.pending_bookings, stats.confirmed_bookings, stats.rejected_bookings],
+                backgroundColor: ['#FFC107', '#4CAF50', '#F44336'],
             },
         ],
     };
 
-    const pieChartData = {
-        labels: ['Students', 'Rooms', 'Booked Rooms', 'Feedbacks'],
+    const revenueBarData = {
+        labels: stats.revenue_per_month.map(item => `Month ${item.month}`),
         datasets: [
             {
-                data: [stats.students, stats.rooms, stats.bookedRooms, stats.feedbacks],
-                backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#E91E63'],
+                label: 'Monthly Revenue',
+                data: stats.revenue_per_month.map(item => item.total_revenue),
+                backgroundColor: '#2196F3',
             },
         ],
     };
@@ -91,37 +97,60 @@ const Dashboard = () => {
         <div className="dashboard-layout">
             <Sidebar />
             <div className="dashboard-main">
-                <h1 className="dashboard-title">Dashboard</h1>
+                <h1 className="dashboard-title">Hostel Owner Dashboard</h1>
+                <div className="date-filters">
+    <label>Start Date: <input type="date" onChange={(e) => setStartDate(e.target.value)} /></label>
+    <label>End Date: <input type="date" onChange={(e) => setEndDate(e.target.value)} /></label>
+    <button onClick={fetchStats}>Apply</button>
+</div>
+
                 <div className="dashboard-stats">
                     <div className="stat-card blue">
-                        <h2>{stats.students}</h2>
-                        <p>Registered Students</p>
-                        <button className="view-details">View Details</button>
+                        <h2>{stats.total_bookings}</h2>
+                        <p>Total Bookings</p>
+                    </div>
+                    <div className="stat-card yellow">
+                        <h2>{stats.pending_bookings}</h2>
+                        <p>Pending</p>
                     </div>
                     <div className="stat-card green">
-                        <h2>{stats.rooms}</h2>
-                        <p>Total Rooms</p>
-                        <button className="view-details">View Details</button>
-                    </div>
-                    <div className="stat-card orange">
-                        <h2>{stats.bookedRooms}</h2>
-                        <p>Booked Rooms</p>
-                        <button className="view-details">View Details</button>
+                        <h2>{stats.confirmed_bookings}</h2>
+                        <p>Confirmed</p>
                     </div>
                     <div className="stat-card red">
-                        <h2>{stats.feedbacks}</h2>
+                        <h2>{stats.rejected_bookings}</h2>
+                        <p>Rejected</p>
+                    </div>
+                    <div className="stat-card purple">
+                        <h2>{stats.total_rooms}</h2>
+                        <p>Total Rooms</p>
+                    </div>
+                    <div className="stat-card teal">
+                        <h2>{stats.available_rooms}</h2>
+                        <p>Available Rooms</p>
+                    </div>
+                    <div className="stat-card orange">
+                        <h2>{stats.booked_rooms}</h2>
+                        <p>Booked Rooms</p>
+                    </div>
+                    <div className="stat-card pink">
+                        <h2>{stats.total_feedbacks}</h2>
                         <p>Feedbacks</p>
-                        <button className="view-details">View Details</button>
+                    </div>
+                    <div className="stat-card indigo">
+                        <h2>{stats.avg_rating}</h2>
+                        <p>Avg Rating ⭐</p>
                     </div>
                 </div>
+
                 <div className="dashboard-charts">
                     <div className="chart-container">
-                        <h2>Bar Chart</h2>
-                        <Bar data={barChartData} />
+                        <h2>Booking Status Breakdown</h2>
+                        <Pie data={bookingPieData} />
                     </div>
                     <div className="chart-container">
-                        <h2>Pie Chart</h2>
-                        <Pie data={pieChartData} />
+                        <h2>Monthly Revenue</h2>
+                        <Bar data={revenueBarData} />
                     </div>
                 </div>
             </div>

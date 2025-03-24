@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     HostelViewSet, RoomViewSet, BookingViewSet, FeedbackViewSet, DashboardView,
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
-    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView
+    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView,OwnerNotificationListView
 )
 
 router = DefaultRouter()
@@ -26,5 +26,7 @@ urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="hostel_owner_dashboard"),
     path("download-report/<str:report_type>/<str:format_type>/", DownloadReportView.as_view(), name="download_report"),
     path("chat-history/<int:hostel_id>/", ChatHistoryView.as_view(), name="chat_history"),
+    path('notifications/', OwnerNotificationListView.as_view(), name='owner_notifications'),
+
     
 ]
