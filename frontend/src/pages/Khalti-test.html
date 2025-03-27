@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Khalti Payment Test</title>
+  <script src="https://khalti.com/static/khalti-checkout.js"></script>
+</head>
+<body>
+  <h2>💳 Pay Security Deposit with Khalti</h2>
+  <button id="pay-button">Pay Rs. 1800</button>
+
+  <script>
+    var config = {
+      publicKey: "3bebb86e373146a9a8ed2499cf90e8e5",  // ✅ Live public key from test-admin.khalti.com
+      productIdentity: "booking123",
+      productName: "Hostel Security Deposit",
+      productUrl: "http://localhost:3000/",
+      paymentPreference: ["KHALTI"],  // ✅ Optional
+      eventHandler: {
+        onSuccess(payload) {
+          alert("✅ Payment Success!\nToken: " + payload.token);
+          console.log("🔐 Token:", payload.token);
+          console.log("💰 Amount:", payload.amount);
+        },
+        onError(error) {
+          console.error("❌ Payment Error:", error);
+          alert("❌ Payment Error:\n" + JSON.stringify(error));
+        },
+        onClose() {
+          console.log("👋 Payment popup closed");
+        }
+      }
+    };
+
+    var checkout = new KhaltiCheckout(config);
+    document.getElementById("pay-button").onclick = function () {
+      checkout.show({ amount: 1800 * 100 }); // Rs. 1800 → 180000 paisa
+    };
+  </script>
+</body>
+</html>

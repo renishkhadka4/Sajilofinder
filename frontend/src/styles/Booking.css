@@ -1,4 +1,19 @@
 /* Main Layout - matches the dark/light theme from screenshot */
+.app-container {
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  transition: margin-left 0.3s ease;
+  margin-left: 240px; /* default sidebar width */
+}
+
+.sidebar-collapsed .main-content {
+  margin-left: 80px; /* collapsed sidebar width */
+}
+
 .booking-content {
     width: 100%;
     background-color: #f8f9fa;

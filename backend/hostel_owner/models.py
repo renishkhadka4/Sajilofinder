@@ -56,14 +56,18 @@ class Floor(models.Model):
         return f"{self.hostel.name} - Floor {self.floor_number}"
 
 class Room(models.Model):
-    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='rooms', default=get_default_floor)
-    room_number = models.CharField(max_length=20, unique=True)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='rooms')
+    room_number = models.CharField(max_length=20)
     room_type = models.CharField(max_length=50, choices=[('Single', 'Single'), ('Double', 'Double'), ('Suite', 'Suite')])
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_available = models.BooleanField(default=True)
 
+    class Meta:
+        unique_together = ('floor', 'room_number')  # ✅ Only unique within floor
+
     def __str__(self):
         return f"Room {self.room_number} - {'Available' if self.is_available else 'Unavailable'}"
+
 
 class RoomImage(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='images')
@@ -85,6 +89,8 @@ class Booking(models.Model):
     check_out = models.DateField()
     status = models.CharField(max_length=20, default='pending')
     created_at = models.DateTimeField(auto_now_add=True) 
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="bookings")
+    pidx = models.CharField(max_length=255, blank=True, null=True)
     def __str__(self):
         return f"{self.student.username} - {self.room.room_number} ({self.status})"
 
@@ -135,3 +141,16 @@ class OwnerNotification(models.Model):
 
     def __str__(self):
         return f"Notification to {self.user.username}"
+
+
+class Payment(models.Model):
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name="payment")
+    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_id = models.CharField(max_length=255)
+    status = models.CharField(max_length=20)  # e.g., success / failed
+    payment_method = models.CharField(max_length=100, default="Khalti")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment for Booking {self.booking.id} - {self.status}"

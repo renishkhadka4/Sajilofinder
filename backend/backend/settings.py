@@ -41,6 +41,15 @@ INSTALLED_APPS = [
     
 ]
 
+from decouple import config
+# settings.py
+
+KHALTI_SECRET_KEY = "c6270f9dff004196a7d8c91585568426"  # ✅ Live Secret Key from test-admin.khalti.com
+
+KHALTI_PUBLIC_KEY = config('KHALTI_PUBLIC_KEY')
+
+
+
 # Add ASGI application reference
 ASGI_APPLICATION = "backend.asgi.application"
 

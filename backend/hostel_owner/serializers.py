@@ -46,6 +46,7 @@ class RoomImageSerializer(serializers.ModelSerializer):
 class RoomSerializer(serializers.ModelSerializer):
     images = RoomImageSerializer(many=True, read_only=True)
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+    
 
     class Meta:
         model = Room

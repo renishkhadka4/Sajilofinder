@@ -103,6 +103,12 @@ from rest_framework.permissions import IsAuthenticated
 
 # ✅ Enable logging
 logger = logging.getLogger(__name__)
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.utils import timezone
+from django.conf import settings
+import requests
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -185,6 +191,80 @@ class BookingViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"❌ Error sending booking email to {recipient_email}: {str(e)}")
             print(f"❌ Error sending booking email to {recipient_email}: {str(e)}")  # ✅ Debugging Output
+
+    
+    @action(detail=True, methods=['post'], url_path='initiate-payment')
+    def initiate_payment(self, request, pk=None):
+        booking = self.get_object()
+
+        payload = {
+            "return_url": "http://localhost:3000/khalti/verify/",
+            "website_url": "http://localhost:3000/",
+            "amount": 1800 * 100,  # In paisa
+            "purchase_order_id": f"BOOKING-{booking.id}",
+            "purchase_order_name": "Hostel Security Deposit",
+            "customer_info": {
+                "name": request.user.username,
+                "email": request.user.email,
+                "phone": "9800000001"  # 🔁 Use test phone or ask during payment
+            }
+        }
+
+        headers = {
+            "Authorization": f"Key {settings.KHALTI_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post("https://dev.khalti.com/api/v2/epayment/initiate/", json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return Response(response.json(), status=200)
+        else:
+            return Response(response.json(), status=400)
+
+    @action(detail=False, methods=['post'], url_path='verify-payment')
+    def verify_payment(self, request):
+        pidx = request.data.get("pidx")
+
+        if not pidx:
+            return Response({"error": "pidx is required"}, status=400)
+
+        headers = {
+            "Authorization": f"Key {settings.KHALTI_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "pidx": pidx
+        }
+
+        response = requests.post("https://dev.khalti.com/api/v2/epayment/lookup/", json=payload, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if data["status"] == "Completed":
+                # Confirm booking if needed
+                return Response({"message": "✅ Payment verified!", "booking_status": "confirmed"})
+            else:
+                return Response({"message": "❌ Payment not completed", "status": data["status"]}, status=400)
+        else:
+            return Response(response.json(), status=400)
+
+        
+    
+        
+    
+
+
+
+        
+    
+
+
+
+        
+    
 
 
 from rest_framework.generics import ListAPIView
@@ -298,3 +378,6 @@ def get_student_notifications(request):
         for n in notifications
     ]
     return Response(data)
+
+
+

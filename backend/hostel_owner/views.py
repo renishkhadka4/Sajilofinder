@@ -1,32 +1,43 @@
-from rest_framework import viewsets, permissions, status, generics
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import never_cache
+from datetime import datetime, timedelta
+from io import BytesIO
+import logging
+import pandas as pd
 
-from .models import Hostel, Room, Booking, Feedback, HostelImage, Floor, RoomImage
-from .serializers import HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer, HostelImageSerializer, FloorSerializer, RoomImageSerializer
-from api.models import CustomUser
-from hostel_owner.models import Feedback, Booking, Room, Floor, Hostel
-from student.models import StudentProfile
 from django.core.mail import send_mail
 from django.conf import settings
-import logging
+from django.db.models import Count, Avg, Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.utils.timezone import now
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
 
-logger = logging.getLogger(__name__)  # ✅ Enable logging
+from rest_framework import viewsets, permissions, status, generics
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from api.models import CustomUser
+from student.models import StudentProfile, Notification
+from hostel_owner.models import Booking, Room, Floor, Hostel, Feedback
+from .models import HostelImage, RoomImage, ChatMessage, OwnerNotification
+from .serializers import (
+    HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer,
+    HostelImageSerializer, FloorSerializer, RoomImageSerializer, OwnerNotificationSerializer
+)
+from rest_framework.permissions import IsAuthenticated
+logger = logging.getLogger(__name__)
+
 
 def send_booking_email(booking, status):
-    """ ✅ Send email to student when booking is confirmed/rejected ✅ """
+    """  Send email to student when booking is confirmed/rejected  """
     try:
         recipient_email = booking.student.email
 
         logger.info(f"📧 Attempting to send email to {recipient_email} - Status: {status}")
-        print(f"📧 Attempting to send email to {recipient_email} - Status: {status}")  # ✅ Debugging Output
-
+        print(f"📧 Attempting to send email to {recipient_email} - Status: {status}")  
         subject = f"Your Booking has been {status}"
         message = f"Hello {booking.student.username},\n\n" \
                   f"Your booking for {booking.room.floor.hostel.name} has been {status}.\n" \
@@ -35,12 +46,12 @@ def send_booking_email(booking, status):
 
         send_mail(subject, message, settings.EMAIL_HOST_USER, [recipient_email], fail_silently=False)
 
-        logger.info(f"✅ Booking email successfully sent to {recipient_email} - Status: {status}")
-        print(f"✅ Booking email successfully sent to {recipient_email} - Status: {status}")  # ✅ Debugging Output
+        logger.info(f" Booking email successfully sent to {recipient_email} - Status: {status}")
+        print(f" Booking email successfully sent to {recipient_email} - Status: {status}")  
 
     except Exception as e:
-        logger.error(f"❌ Error sending booking email to {recipient_email}: {str(e)}")
-        print(f"❌ Error sending booking email to {recipient_email}: {str(e)}")  # ✅ Debugging Output
+        logger.error(f" Error sending booking email to {recipient_email}: {str(e)}")
+        print(f" Error sending booking email to {recipient_email}: {str(e)}")  
 
 
 class IsHostelOwner(permissions.BasePermission):
@@ -91,7 +102,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 class HostelViewSet(viewsets.ModelViewSet):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
@@ -105,9 +116,9 @@ class HostelViewSet(viewsets.ModelViewSet):
             for img in images:
                 HostelImage.objects.create(hostel=hostel, image=img)
 
-    @action(detail=True, methods=['post'], url_path='upload_images')  # ✅ Fix URL path
+    @action(detail=True, methods=['post'], url_path='upload_images')  #  Fix URL path
     def upload_images(self, request, pk=None):
-        """ ✅ API to upload multiple images for a hostel ✅ """
+        """  API to upload multiple images for a hostel  """
         hostel = self.get_object()
         images = request.FILES.getlist('images')
 
@@ -126,7 +137,7 @@ class HostelViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='bulk_upload_images')  
     def bulk_upload_images(self, request, pk=None):
-        """ ✅ API to upload multiple images at once for a hostel ✅ """
+        """  API to upload multiple images at once for a hostel  """
         hostel = self.get_object()
         images = request.FILES.getlist('images')
 
@@ -163,7 +174,7 @@ class HostelViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def set_cancellation_policy(self, request, pk=None):
-        """ ✅ API to set a hostel's cancellation policy ✅ """
+        """  API to set a hostel's cancellation policy  """
         hostel = self.get_object()
         policy = request.data.get("cancellation_policy")
 
@@ -194,11 +205,52 @@ class HostelViewSet(viewsets.ModelViewSet):
 
         return Response({"message": "Image order updated successfully."}, status=200)
 
+from datetime import datetime, timedelta
+from io import BytesIO
+import logging
+import pandas as pd
+
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Count, Avg, Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.utils.timezone import now
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
+
+from rest_framework import viewsets, permissions, status, generics
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from api.models import CustomUser
+from student.models import StudentProfile, Notification
+from hostel_owner.models import Booking, Room, Floor, Hostel, Feedback
+from .models import HostelImage, RoomImage, ChatMessage, OwnerNotification
+from .serializers import (
+    HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer,
+    HostelImageSerializer, FloorSerializer, RoomImageSerializer, OwnerNotificationSerializer
+)
+from rest_framework.permissions import IsAuthenticated
+logger = logging.getLogger(__name__)
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
+    def get_queryset(self):
+        queryset = Room.objects.all()
+        floor_id = self.request.query_params.get('floor_id')
+        hostel_id = self.request.query_params.get('hostel_id')
+
+        if floor_id:
+            queryset = queryset.filter(floor_id=floor_id)
+        if hostel_id:
+            queryset = queryset.filter(floor__hostel_id=hostel_id)
+
+        return queryset
 
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
@@ -211,9 +263,9 @@ class RoomViewSet(viewsets.ModelViewSet):
         if images:
             for img in images:
                 RoomImage.objects.create(room=room, image=img)
-    @action(detail=True, methods=['patch'], url_path='update_availability')  # ✅ Fix URL path
+    @action(detail=True, methods=['patch'], url_path='update_availability')  
     def update_availability(self, request, pk=None):
-        """ ✅ API to mark a room as available/unavailable ✅ """
+        """  API to mark a room as available/unavailable  """
         try:
             room = self.get_object()
             is_available = request.data.get('is_available', None)
@@ -231,7 +283,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         
     @action(detail=False, methods=['post'], url_path='bulk_add')
     def bulk_add_rooms(self, request):
-        """ ✅ API to add multiple rooms at once under a specific floor ✅ """
+        """  API to add multiple rooms at once under a specific floor  """
         floor_id = request.data.get('floor_id', None)
         rooms_data = request.data.get('rooms', [])
 
@@ -287,11 +339,19 @@ def get_current_user(request):
         })
     return Response({"error": "Unauthorized"}, status=401)
 
+
+
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
-from hostel_owner.models import Booking
 from django.utils import timezone
+from django.conf import settings
+import requests
+
+from hostel_owner.models import Booking, Payment
+from hostel_owner.serializers import BookingSerializer
+from hostel_owner.views import send_booking_email
+from rest_framework.decorators import action
 
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
@@ -307,7 +367,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def approve(self, request, pk=None):
-        """ ✅ Hostel Owner Approves Booking ✅ """
+        """ Hostel Owner Approves Booking """
         try:
             booking = self.get_object()
 
@@ -317,8 +377,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.status = 'confirmed'
             booking.save()
 
-            print(f"✅ Booking {booking.id} confirmed. Calling send_booking_email()")  # ✅ Debugging Output
-            send_booking_email(booking, "Confirmed")  # ✅ Call function directly
+            print(f" Booking {booking.id} confirmed. Calling send_booking_email()")
+            send_booking_email(booking, "Confirmed")
 
             return Response({'message': 'Booking approved, email sent!'}, status=status.HTTP_200_OK)
 
@@ -327,7 +387,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def reject(self, request, pk=None):
-        """ ❌ Hostel Owner Rejects Booking ❌ """
+        """ Hostel Owner Rejects Booking """
         try:
             booking = self.get_object()
 
@@ -337,17 +397,16 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.status = 'rejected'
             booking.save()
 
-            print(f"❌ Booking {booking.id} rejected. Calling send_booking_email()")  # ✅ Debugging Output
-            send_booking_email(booking, "Rejected")  # ✅ Call function directly
-
+            print(f"❌ Booking {booking.id} rejected. Calling send_booking_email()")
+            send_booking_email(booking, "Rejected")
             return Response({'message': 'Booking rejected, email sent!'}, status=status.HTTP_200_OK)
-    
+
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+
     @action(detail=True, methods=['patch'])
     def cancel_booking(self, request, pk=None):
-        """ ✅ API to cancel a booking and apply refund policy ✅ """
+        """ Cancel a confirmed booking and apply refund policy """
         booking = self.get_object()
         hostel = booking.room.floor.hostel
         policy = hostel.cancellation_policy
@@ -361,12 +420,61 @@ class BookingViewSet(viewsets.ModelViewSet):
         if days_before_checkin >= policy.get("full_refund_days", 0):
             refund = 100  # Full refund
         elif days_before_checkin >= policy.get("partial_refund_days", 0):
-            refund = policy.get("partial_refund_percentage", 0)  # Partial refund
+            refund = policy.get("partial_refund_percentage", 0)
 
         booking.status = "canceled"
         booking.save()
 
         return Response({"message": f"Booking canceled with {refund}% refund"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def pay(self, request, pk=None):
+        """ Student pays Security Deposit via Khalti to confirm booking """
+        booking = self.get_object()
+
+        if booking.status == "confirmed":
+            return Response({"error": "Booking already confirmed"}, status=400)
+
+        token = request.data.get("token")
+        amount = request.data.get("amount")  # in paisa
+
+        if not token or not amount:
+            return Response({"error": "token and amount are required"}, status=400)
+
+        headers = {
+            "Authorization": f"Key {settings.KHALTI_SECRET_KEY}"
+        }
+        payload = {
+            "token": token,
+            "amount": amount
+        }
+
+        response = requests.post("https://khalti.com/api/v2/payment/verify/", data=payload, headers=headers)
+
+
+        if response.status_code == 200:
+            data = response.json()
+
+            booking.status = "confirmed"
+            booking.save()
+
+            Payment.objects.create(
+                booking=booking,
+                student=booking.student,
+                amount=data["amount"] / 100,
+                transaction_id=data["idx"],
+                status="success"
+            )
+
+            send_booking_email(booking, "Confirmed")
+            return Response({"message": "Payment successful and booking confirmed!"}, status=200)
+
+        else:
+            return Response({"error": "Payment verification failed", "details": response.json()}, status=400)
+
+
+
+
 
 @api_view(['GET'])
 def get_confirmed_students(request, hostel_id):
@@ -451,11 +559,7 @@ def GetHostelStudents(request, hostel_id):
 
     return Response({"students": students}, status=200)
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Booking, Hostel
-from api.models import CustomUser
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -496,19 +600,6 @@ def get_all_hostel_students(request):
 
     return Response({"students": students}, status=200)
 
-
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions, status
-from django.db.models import Count, Avg, Sum
-from datetime import datetime, timedelta
-from .models import Booking, Room, Feedback, Hostel
-from api.models import CustomUser
-
-from datetime import datetime
-
 class DashboardView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -517,7 +608,7 @@ class DashboardView(APIView):
         if user.role != "HostelOwner":
             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
-        # ✅ Get optional query parameters
+       
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
 
@@ -564,16 +655,7 @@ class DashboardView(APIView):
 
 
 
-import pandas as pd
-from django.http import HttpResponse
-from django.utils.timezone import now
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions, status
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from .models import Booking, Feedback
-from api.models import CustomUser
+
 
 class DownloadReportView(APIView):
     """
@@ -719,15 +801,6 @@ class DownloadReportView(APIView):
         return response
 
 
-
-
-
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from .models import ChatMessage
-from api.models import CustomUser
-
 class ChatHistoryView(APIView):
     """
     API to fetch chat history between a student and hostel owner.
@@ -757,16 +830,14 @@ from django.core.mail import send_mail
 from django.conf import settings
 import logging
 
-logger = logging.getLogger(__name__)  # ✅ Enable logging
+
 
 def send_chat_email_notification(sender, receiver, message):
-    """ ✅ Send email to notify users of new chat messages ✅ """
+    """  Send email to notify users of new chat messages """
     try:
-        recipient_email = receiver.email  # ✅ Get receiver's email
-
-        logger.info(f"📧 Sending chat notification email to {recipient_email}")
-        print(f"📧 Sending chat notification email to {recipient_email}")  # ✅ Debugging Output
-
+        recipient_email = receiver.email  
+        logger.info(f" Sending chat notification email to {recipient_email}")
+        print(f" Sending chat notification email to {recipient_email}")  
         subject = f"New Message from {sender.username}"
         message_body = f"Hello {receiver.username},\n\n" \
                        f"You have received a new message from {sender.username}:\n\n" \
@@ -776,28 +847,18 @@ def send_chat_email_notification(sender, receiver, message):
 
         send_mail(subject, message_body, settings.EMAIL_HOST_USER, [recipient_email], fail_silently=False)
 
-        logger.info(f"✅ Chat notification email sent to {recipient_email}")
-        print(f"✅ Chat notification email sent to {recipient_email}")  # ✅ Debugging Output
-
+        logger.info(f" Chat notification email sent to {recipient_email}")
+        print(f" Chat notification email sent to {recipient_email}")  
     except Exception as e:
-        logger.error(f"❌ Error sending chat notification email to {recipient_email}: {str(e)}")
-        print(f"❌ Error sending chat notification email to {recipient_email}: {str(e)}")  # ✅ Debugging Output
+        logger.error(f" Error sending chat notification email to {recipient_email}: {str(e)}")
+        print(f" Error sending chat notification email to {recipient_email}: {str(e)}")  
 
-
-
-from student.models import Notification  # Import from student app
 
 def notify_student_on_reply(feedback):
     Notification.objects.create(
         user=feedback.student,
         message=f"The owner replied to your feedback on {feedback.hostel.name}."
     )
-
-
-from .models import OwnerNotification
-from .serializers import OwnerNotificationSerializer
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 
 class OwnerNotificationListView(APIView):
     permission_classes = [IsAuthenticated]

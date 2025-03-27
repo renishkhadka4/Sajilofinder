@@ -211,6 +211,7 @@ h1::after {
 .export-dropdown {
   position: relative;
   display: inline-block;
+  z-index: 20; /* Ensure it's on top */
 }
 
 .export-btn {
@@ -225,6 +226,8 @@ h1::after {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative; /* Add this */
+  z-index: 21;
 }
 
 .export-btn:hover {
@@ -241,7 +244,7 @@ h1::after {
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   width: 120px;
-  z-index: 10;
+  z-index: 22; /* Fix dropdown layer */
   overflow: hidden;
   display: none;
 }

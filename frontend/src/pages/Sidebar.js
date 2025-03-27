@@ -154,9 +154,7 @@ const Sidebar = ({ onToggle }) => {
 
   return (
     <>
-      <div className={`sidebar-toggle ${collapsed ? "sidebar-collapsed" : ""}`} onClick={toggleSidebar}>
-        {collapsed ? <FaBars /> : <FaTimes />}
-      </div>
+      
 
       <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
@@ -184,9 +182,7 @@ const Sidebar = ({ onToggle }) => {
           <li className={isActive("/manage-hostels")}>
             <Link to="/manage-hostels"><FaHotel className="sidebar-icon" /> {!collapsed && <span>Manage Hostels</span>}</Link>
           </li>
-          <li className={isActive("/manage-rooms")}>
-            <Link to="/manage-rooms"><FaBed className="sidebar-icon" /> {!collapsed && <span>Manage Rooms</span>}</Link>
-          </li>
+         
           <li className={isActive("/bookings")}>
             <Link to="/bookings"><FaBook className="sidebar-icon" /> {!collapsed && <span>Bookings</span>}</Link>
           </li>

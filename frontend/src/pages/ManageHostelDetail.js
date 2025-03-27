@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import Sidebar from '../pages/Sidebar';
-import '../styles/ManageHostelDetail.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-
+import '../styles/ManageHostelDetail.css';
 
 const ManageHostelDetail = () => {
     const { id } = useParams();
@@ -12,15 +11,7 @@ const ManageHostelDetail = () => {
     const [formData, setFormData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [imagePreviews, setImagePreviews] = useState([]);
-
-    const [showFacilities, setShowFacilities] = useState(false);
-    const [showRoomFeatures, setShowRoomFeatures] = useState(false);
-    const [showPricing, setShowPricing] = useState(false);
-    const [showRules, setShowRules] = useState(false);
-    const [showLocation, setShowLocation] = useState(false);
-    const [showImages, setShowImages] = useState(false);
-    const [showExtraDetails, setShowExtraDetails] = useState(false);
-    const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
+    const [activeSection, setActiveSection] = useState('basic');
 
     useEffect(() => {
         fetchHostelDetails();
@@ -109,12 +100,10 @@ const ManageHostelDetail = () => {
                 updatedData.append(field, formData[field] ? "true" : "false");
             });
 
-            // Cancellation Policy
             if (formData.cancellation_policy) {
                 updatedData.append("cancellation_policy", JSON.stringify(formData.cancellation_policy));
             }
 
-            // New images
             if (formData.images && formData.images.length > 0) {
                 formData.images.forEach((image, index) => {
                     updatedData.append(`images[${index}]`, image);
@@ -128,11 +117,11 @@ const ManageHostelDetail = () => {
                 },
             });
 
-            alert("✅ Hostel updated successfully!");
+            showNotification("Hostel updated successfully!", "success");
             fetchHostelDetails();
         } catch (error) {
-            console.error("❌ Error updating hostel:", error.response?.data || error.message);
-            alert(`Failed to update hostel: ${JSON.stringify(error.response?.data || error.message)}`);
+            console.error("Error updating hostel:", error.response?.data || error.message);
+            showNotification(`Failed to update: ${JSON.stringify(error.response?.data || error.message)}`, "error");
         }
     };
 
@@ -143,170 +132,468 @@ const ManageHostelDetail = () => {
                 await api.delete(`/hostel_owner/hostels/${id}/`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                alert('Hostel deleted successfully!');
+                showNotification('Hostel deleted successfully!', 'success');
                 navigate('/manage-hostels');
             } catch (error) {
                 console.error('Error deleting hostel:', error);
-                alert('Failed to delete hostel');
+                showNotification('Failed to delete hostel', 'error');
             }
         }
     };
 
-    if (loading || !formData) return <p>Loading...</p>;
+    const showNotification = (message, type) => {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }, 10);
+    };
+
+    if (loading || !formData) {
+        return (
+            <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading hostel details...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="dashboard-layout">
+        <div className="dashboard-layout manage-hostel-detail">
+
             <Sidebar />
             <div className="dashboard-main">
-                <div className="hostel-detail-container">
-                    <div className="edit-form">
-                        <h2>Edit Hostel</h2>
-                        <form onSubmit={handleUpdate}>
-                            <label>Name:</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} />
+                <div className="hostel-edit-container">
+                    <div className="hostel-edit-header">
+                        <h1>{formData.name}</h1>
+                        <div className="action-buttons">
+                            <button className="back-button" onClick={() => navigate('/manage-hostels')}>
+                                <i className="fas fa-arrow-left"></i> Back to Hostels
+                            </button>
+                            <button className="delete-button" onClick={handleDelete}>
+                                <i className="fas fa-trash"></i> Delete Hostel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="edit-form-container">
+                        <div className="form-nav">
+                            <button 
+                                className={activeSection === 'basic' ? 'active' : ''} 
+                                onClick={() => setActiveSection('basic')}
+                            >
+                                Basic Info
+                            </button>
+                            <button 
+                                className={activeSection === 'location' ? 'active' : ''} 
+                                onClick={() => setActiveSection('location')}
+                            >
+                                Location
+                            </button>
+                            <button 
+                                className={activeSection === 'features' ? 'active' : ''} 
+                                onClick={() => setActiveSection('features')}
+                            >
+                                Features
+                            </button>
+                            <button 
+                                className={activeSection === 'pricing' ? 'active' : ''} 
+                                onClick={() => setActiveSection('pricing')}
+                            >
+                                Pricing
+                            </button>
+                            <button 
+                                className={activeSection === 'rules' ? 'active' : ''} 
+                                onClick={() => setActiveSection('rules')}
+                            >
+                                Rules
+                            </button>
+                            <button 
+                                className={activeSection === 'images' ? 'active' : ''} 
+                                onClick={() => setActiveSection('images')}
+                            >
+                                Images
+                            </button>
+                        </div>
 
-                            <label>Address:</label>
-                            <input type="text" name="address" value={formData.address} onChange={handleChange} />
+                        <form onSubmit={handleUpdate} className="hostel-edit-form">
+                            {/* Basic Info Section */}
+                            <div className={`form-section ${activeSection === 'basic' ? 'active' : ''}`}>
 
-                            <label>Phone:</label>
-                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} />
+                                <h2>Basic Information</h2>
+                                <div className="form-group">
+                                    <label>Hostel Name</label>
+                                    <input 
+                                        type="text" 
+                                        name="name" 
+                                        value={formData.name || ''} 
+                                        onChange={handleChange} 
+                                        placeholder="Enter hostel name"
+                                    />
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea 
+                                        name="description" 
+                                        value={formData.description || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Describe your hostel"
+                                        rows="5"
+                                    ></textarea>
+                                </div>
+                                
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Phone</label>
+                                        <input 
+                                            type="text" 
+                                            name="phone" 
+                                            value={formData.phone || ''} 
+                                            onChange={handleChange} 
+                                            placeholder="Contact number"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>Email</label>
+                                        <input 
+                                            type="email" 
+                                            name="email" 
+                                            value={formData.email || ''} 
+                                            onChange={handleChange}
+                                            placeholder="Contact email"
+                                        />
+                                    </div>
+                                </div>
 
-                            <label>Email:</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange} />
+                                <div className="form-group">
+                                    <label>Visiting Hours</label>
+                                    <input 
+                                        type="text" 
+                                        name="visiting_hours" 
+                                        value={formData.visiting_hours || ''} 
+                                        onChange={handleChange}
+                                        placeholder="e.g., 9:00 AM - 8:00 PM"
+                                    />
+                                </div>
+                            </div>
 
-                            <label>Description:</label>
-                            <textarea name="description" value={formData.description} onChange={handleChange}></textarea>
+                            {/* Location Section */}
+                            <div className={`form-section ${activeSection === 'location' ? 'active' : ''}`}>
 
-                            {/* Extra Details */}
-                            <h3 onClick={() => setShowExtraDetails(!showExtraDetails)} className="collapsible-header">
-                                Additional Info {showExtraDetails ? "🔼" : "🔽"}
-                            </h3>
-                            {showExtraDetails && (
-                                <>
-                                    <label>Nearby Colleges:</label>
-                                    <input type="text" name="nearby_colleges" value={formData.nearby_colleges || ""} onChange={handleChange} />
-                                    <label>Nearby Markets:</label>
-                                    <input type="text" name="nearby_markets" value={formData.nearby_markets || ""} onChange={handleChange} />
-                                    <label>Visiting Hours:</label>
-                                    <input type="text" name="visiting_hours" value={formData.visiting_hours || ""} onChange={handleChange} />
-                                </>
-                            )}
+                                <h2>Location Details</h2>
+                                <div className="form-group">
+                                    <label>Address</label>
+                                    <input 
+                                        type="text" 
+                                        name="address" 
+                                        value={formData.address || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Full address"
+                                    />
+                                </div>
+                                
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>City</label>
+                                        <input 
+                                            type="text" 
+                                            name="city" 
+                                            value={formData.city || ''} 
+                                            onChange={handleChange}
+                                            placeholder="City"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>State</label>
+                                        <input 
+                                            type="text" 
+                                            name="state" 
+                                            value={formData.state || ''} 
+                                            onChange={handleChange}
+                                            placeholder="State"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>ZIP Code</label>
+                                        <input 
+                                            type="text" 
+                                            name="zip_code" 
+                                            value={formData.zip_code || ''} 
+                                            onChange={handleChange}
+                                            placeholder="ZIP code"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Google Maps Link</label>
+                                    <input 
+                                        type="text" 
+                                        name="google_maps_link" 
+                                        value={formData.google_maps_link || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Google Maps URL"
+                                    />
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Nearby Colleges</label>
+                                    <input 
+                                        type="text" 
+                                        name="nearby_colleges" 
+                                        value={formData.nearby_colleges || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Comma-separated list of nearby colleges"
+                                    />
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Nearby Markets</label>
+                                    <input 
+                                        type="text" 
+                                        name="nearby_markets" 
+                                        value={formData.nearby_markets || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Comma-separated list of nearby markets"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Features Section */}
+                            <div className={`form-section ${activeSection === 'features' ? 'active' : ''}`}>
 
-                            {/* Pricing */}
-                            <h3 onClick={() => setShowPricing(!showPricing)} className="collapsible-header">
-                                Pricing {showPricing ? "🔼" : "🔽"}
-                            </h3>
-                            {showPricing && (
-                                <>
-                                    <input type="number" name="rent_min" value={formData.rent_min} onChange={handleChange} placeholder="Min Rent" />
-                                    <input type="number" name="rent_max" value={formData.rent_max} onChange={handleChange} placeholder="Max Rent" />
-                                    <input type="number" name="security_deposit" value={formData.security_deposit} onChange={handleChange} placeholder="Security Deposit" />
-                                </>
-                            )}
+                                <h2>Hostel Features</h2>
+                                <div className="features-container">
+                                    <div className="features-column">
+                                        <h3>Facilities</h3>
+                                        <div className="checkbox-group">
+                                            {["wifi", "parking", "laundry", "security_guard", "mess_service"].map((key) => (
+                                                <label key={key} className="checkbox-label">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name={key} 
+                                                        checked={formData[key] || false} 
+                                                        onChange={handleChange} 
+                                                    />
+                                                    <span className="checkbox-text">
+                                                        {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="features-column">
+                                        <h3>Room Features</h3>
+                                        <div className="checkbox-group">
+                                            {["attached_bathroom", "air_conditioning", "heater", "balcony"].map((key) => (
+                                                <label key={key} className="checkbox-label">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name={key} 
+                                                        checked={formData[key] || false} 
+                                                        onChange={handleChange} 
+                                                    />
+                                                    <span className="checkbox-text">
+                                                        {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                            {/* Cancellation Policy */}
-                            <h3 onClick={() => setShowCancellationPolicy(!showCancellationPolicy)} className="collapsible-header">
-                                Cancellation Policy {showCancellationPolicy ? "🔼" : "🔽"}
-                            </h3>
-                            {showCancellationPolicy && (
-                                <>
-                                    <input type="number" name="full_refund_days" value={formData.cancellation_policy?.full_refund_days || ""} onChange={handleCancellationChange} placeholder="Full Refund Days" />
-                                    <input type="number" name="partial_refund_days" value={formData.cancellation_policy?.partial_refund_days || ""} onChange={handleCancellationChange} placeholder="Partial Refund Days" />
-                                    <input type="number" name="partial_refund_percentage" value={formData.cancellation_policy?.partial_refund_percentage || ""} onChange={handleCancellationChange} placeholder="Partial Refund %" />
-                                </>
-                            )}
+                            {/* Pricing Section */}
+                            <div className={`form-section ${activeSection === 'pricing' ? 'active' : ''}`}>
 
-                            {/* Rules */}
-                            <h3 onClick={() => setShowRules(!showRules)} className="collapsible-header">
-                                Rules {showRules ? "🔼" : "🔽"}
-                            </h3>
-                            {showRules && ["smoking_allowed", "alcohol_allowed", "pets_allowed"].map((key) => (
-                                <label key={key}>
-                                    <input type="checkbox" name={key} checked={formData[key]} onChange={handleChange} />
-                                    {key.replace("_", " ").toUpperCase()}
-                                </label>
-                            ))}
+                                <h2>Pricing & Policies</h2>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Minimum Rent (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            name="rent_min" 
+                                            value={formData.rent_min || ''} 
+                                            onChange={handleChange}
+                                            placeholder="Minimum rent"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>Maximum Rent (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            name="rent_max" 
+                                            value={formData.rent_max || ''} 
+                                            onChange={handleChange}
+                                            placeholder="Maximum rent"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Security Deposit (₹)</label>
+                                    <input 
+                                        type="number" 
+                                        name="security_deposit" 
+                                        value={formData.security_deposit || ''} 
+                                        onChange={handleChange}
+                                        placeholder="Security deposit amount"
+                                    />
+                                </div>
+                                
+                                <h3>Cancellation Policy</h3>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Full Refund Days</label>
+                                        <input 
+                                            type="number" 
+                                            name="full_refund_days" 
+                                            value={formData.cancellation_policy?.full_refund_days || ''} 
+                                            onChange={handleCancellationChange}
+                                            placeholder="Days for full refund"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>Partial Refund Days</label>
+                                        <input 
+                                            type="number" 
+                                            name="partial_refund_days" 
+                                            value={formData.cancellation_policy?.partial_refund_days || ''} 
+                                            onChange={handleCancellationChange}
+                                            placeholder="Days for partial refund"
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>Partial Refund %</label>
+                                        <input 
+                                            type="number" 
+                                            name="partial_refund_percentage" 
+                                            value={formData.cancellation_policy?.partial_refund_percentage || ''} 
+                                            onChange={handleCancellationChange}
+                                            placeholder="Percentage for partial refund"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-                            {/* Facilities */}
-                            <h3 onClick={() => setShowFacilities(!showFacilities)} className="collapsible-header">
-                                Facilities {showFacilities ? "🔼" : "🔽"}
-                            </h3>
-                            {showFacilities && ["wifi", "parking", "laundry", "security_guard", "mess_service"].map((key) => (
-                                <label key={key}>
-                                    <input type="checkbox" name={key} checked={formData[key]} onChange={handleChange} />
-                                    {key.replace("_", " ").toUpperCase()}
-                                </label>
-                            ))}
+                            {/* Rules Section */}
+                            <div className={`form-section ${activeSection === 'rules' ? 'active' : ''}`}>
 
-                            {/* Room Features */}
-                            <h3 onClick={() => setShowRoomFeatures(!showRoomFeatures)} className="collapsible-header">
-                                Room Features {showRoomFeatures ? "🔼" : "🔽"}
-                            </h3>
-                            {showRoomFeatures && ["attached_bathroom", "air_conditioning", "heater", "balcony"].map((key) => (
-                                <label key={key}>
-                                    <input type="checkbox" name={key} checked={formData[key]} onChange={handleChange} />
-                                    {key.replace("_", " ").toUpperCase()}
-                                </label>
-                            ))}
+                                <h2>Hostel Rules</h2>
+                                <div className="rules-container">
+                                    {["smoking_allowed", "alcohol_allowed", "pets_allowed"].map((key) => (
+                                        <label key={key} className="rule-item">
+                                            <input 
+                                                type="checkbox" 
+                                                name={key} 
+                                                checked={formData[key] || false} 
+                                                onChange={handleChange} 
+                                            />
+                                            <div className="rule-label">
+                                                <span className="rule-icon">
+                                                    {key === "smoking_allowed" && "🚬"}
+                                                    {key === "alcohol_allowed" && "🍸"}
+                                                    {key === "pets_allowed" && "🐾"}
+                                                </span>
+                                                <span className="rule-text">
+                                                    {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                                </span>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
 
-                      {/* Images Section with Drag-and-Drop */}
-<h3 onClick={() => setShowImages(!showImages)} className="collapsible-header">
-  Images {showImages ? "🔼" : "🔽"}
-</h3>
-{showImages && (
-  <>
-    <input type="file" multiple onChange={handleImageUpload} accept="image/*" />
+                            {/* Images Section */}
+                            <div className={`form-section ${activeSection === 'images' ? 'active' : ''}`}>
 
-    <DragDropContext onDragEnd={(result) => {
-      if (!result.destination) return;
-      const reordered = Array.from(imagePreviews);
-      const [moved] = reordered.splice(result.source.index, 1);
-      reordered.splice(result.destination.index, 0, moved);
-      setImagePreviews(reordered);
-    }}>
-      <Droppable droppableId="imagePreviews" direction="horizontal">
-        {(provided) => (
-          <div
-            className="existing-images"
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}
-          >
-            {imagePreviews.map((img, index) => (
-              <Draggable key={img.id} draggableId={String(img.id)} index={index}>
-                {(provided) => (
-                  <div
-                    className="image-preview"
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    style={{
-                      ...provided.draggableProps.style,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center"
-                    }}
-                  >
-                    <img src={img.image} alt="Hostel" style={{ width: 100, height: 100, objectFit: 'cover' }} />
-                    <button onClick={() => handleImageDelete(img.id)}>❌</button>
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
-  </>
-)}
+                                <h2>Hostel Images</h2>
+                                <div className="images-upload-container">
+                                    <label className="custom-file-upload">
+                                        <input type="file" multiple onChange={handleImageUpload} accept="image/*" />
+                                        <i className="fas fa-cloud-upload-alt"></i> Upload Images
+                                    </label>
+                                    <p className="help-text">Drag and drop images to reorder them. First image will be the main image.</p>
+                                </div>
+                                
+                                <DragDropContext onDragEnd={(result) => {
+                                    if (!result.destination) return;
+                                    const reordered = Array.from(imagePreviews);
+                                    const [moved] = reordered.splice(result.source.index, 1);
+                                    reordered.splice(result.destination.index, 0, moved);
+                                    setImagePreviews(reordered);
+                                }}>
+                                    <Droppable droppableId="imagePreviews" direction="horizontal">
+                                        {(provided) => (
+                                            <div
+                                                className="images-gallery"
+                                                ref={provided.innerRef}
+                                                {...provided.droppableProps}
+                                            >
+                                                {imagePreviews.map((img, index) => (
+                                                    <Draggable key={img.id} draggableId={String(img.id)} index={index}>
+                                                        {(provided) => (
+                                                            <div
+                                                                className="image-preview-card"
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                style={{
+                                                                    ...provided.draggableProps.style,
+                                                                }}
+                                                            >
+                                                                <div className="image-actions">
+                                                                    <button 
+                                                                        type="button"
+                                                                        className="delete-image-btn" 
+                                                                        onClick={() => handleImageDelete(img.id)}
+                                                                    >
+                                                                        <i className="fas fa-trash"></i>
+                                                                    </button>
+                                                                    <span className="image-order">{index === 0 ? 'Main' : `#${index + 1}`}</span>
+                                                                </div>
+                                                                <img src={img.image} alt={`Hostel view ${index + 1}`} />
+                                                                <div className="drag-handle">
+                                                                    <i className="fas fa-grip-lines"></i>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                                {provided.placeholder}
+                                                {imagePreviews.length === 0 && (
+                                                    <div className="no-images">
+                                                        <i className="fas fa-images"></i>
+                                                        <p>No images uploaded yet</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
+                            </div>
 
-
-                            <button type="submit" className="update-btn">Update Hostel</button>
+                            <div className="form-actions">
+                                <button type="submit" className="update-button">
+                                    <i className="fas fa-save"></i> Save Changes
+                                </button>
+                            </div>
                         </form>
-
-                        <button className="delete-btn" onClick={handleDelete}>Delete Hostel</button>
-                        <button className="back-btn" onClick={() => navigate('/manage-hostels')}>Back</button>
                     </div>
                 </div>
             </div>

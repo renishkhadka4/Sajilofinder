@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 import Sidebar from '../pages/Sidebar';
 import '../styles/ManageStudent.css';
+import { Link } from "react-router-dom";
+
 
 const ManageStudents = () => {
   const [students, setStudents] = useState([]);
@@ -30,6 +32,7 @@ const ManageStudents = () => {
       const response = await api.get(`/hostel_owner/students/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
       const data = response.data.students || [];
       console.log("Fetched students:", data); // Debug log
       setStudents(data);
@@ -53,6 +56,27 @@ const ManageStudents = () => {
       console.error("❌ Error fetching students:", error);
     }
   };
+  const [hostelId, setHostelId] = useState(null); // Store hostel_id for hostel owner
+
+useEffect(() => {
+  fetchStudents();
+  fetchHostelId(); // ✅ Fetch hostel_id for owner
+}, []);
+
+const fetchHostelId = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await api.get(`/hostel_owner/profile/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("Owner Profile Data:", response.data); // Debugging
+    setHostelId(response.data.hostel_id); // ✅ Assuming API returns hostel_id
+  } catch (error) {
+    console.error("❌ Error fetching hostel ID:", error);
+  }
+};
+
 
   const handleAction = async (id, action) => {
     const token = localStorage.getItem("token");
@@ -248,16 +272,26 @@ const ManageStudents = () => {
                     </span>
                   </td>
                   <td className="actions">
-                    {student.status === "pending" && (
-                      <>
-                        <button onClick={() => handleAction(student.id, "approve")}>✅</button>
-                        <button onClick={() => handleAction(student.id, "reject")}>❌</button>
-                      </>
-                    )}
-                    {student.status === "confirmed" && (
-                      <button onClick={() => handleAction(student.id, "cancel_booking")}>🗑</button>
-                    )}
-                  </td>
+  {student.status === "pending" && (
+    <>
+      <button onClick={() => handleAction(student.id, "approve")}></button>
+      <button onClick={() => handleAction(student.id, "reject")}></button>
+    </>
+  )}
+  {student.status === "confirmed" && (
+    <>
+      <button onClick={() => handleAction(student.id, "cancel_booking")}>🗑</button>
+      <Link
+        to={`/chat/${student.hostel?.id}/${student.id}`}
+        className="chat-btn"
+        title="Chat with student"
+      >
+        💬
+      </Link>
+    </>
+  )}
+</td>
+
                 </tr>
               ))
             ) : (

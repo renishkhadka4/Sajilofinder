@@ -1,127 +1,254 @@
+/* HostelDetail.css - Advanced Styling */
+:root {
+  /* Color Palette */
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --background-color: #f4f6f7;
+  --text-color: #2c3e50;
+  --card-background: #ffffff;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Global Reset and Base Styles */
 .hostel-detail-container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--background-color);
+  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Hostel Info Section */
+.hostel-info-section {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: var(--box-shadow);
+}
+
+.hostel-title {
+  color: var(--primary-color);
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.hostel-location, 
+.hostel-info, 
+.register-year {
+  color: var(--text-color);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Image Gallery */
+.hostel-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.hostel-images img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  transition: transform 0.3s ease;
+}
+
+.hostel-images img:hover {
+  transform: scale(1.05);
+}
+
+/* Hostel Description */
+.hostel-description {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: var(--box-shadow);
+}
+
+.hostel-description h2 {
+  color: var(--primary-color);
+  margin-bottom: 15px;
+}
+
+/* Room Filter */
+.room-filter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.room-filter label {
+  margin-right: 15px;
+  font-weight: 600;
+}
+
+.room-filter select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: var(--card-background);
+}
+
+/* Room Section */
+.room-section {
+  margin-bottom: 30px;
+}
+
+.room-section h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.room-card {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--box-shadow);
+  transition: transform 0.3s ease;
+}
+
+.room-card:hover {
+  transform: translateY(-10px);
+}
+
+.room-card h3 {
+  color: var(--secondary-color);
+  margin-bottom: 15px;
+}
+
+.room-images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.room-images img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.book-room-btn, 
+.view-details-btn {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.book-room-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  margin-right: 10px;
+}
+
+.view-details-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.book-room-btn:hover,
+.view-details-btn:hover {
+  opacity: 0.9;
+}
+
+/* Recent Hostels Section */
+.recent-hostels {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--box-shadow);
+}
+
+.recent-hostels h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.recent-hostel-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: background-color 0.3s ease;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.recent-hostel-card:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.recent-hostel-card img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 15px;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .hostel-detail-container {
+    padding: 10px;
   }
-  
+
   .hostel-title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: 2rem;
   }
-  
-  .hostel-location {
-    font-size: 18px;
-    color: #666;
-  }
-  
-  .hostel-info, .register-year {
-    font-size: 16px;
-    margin: 5px 0;
-  }
-  
+
+  .room-grid,
   .hostel-images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
+    grid-template-columns: 1fr;
   }
-  
-  .hostel-images img {
-    width: 30%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 8px;
+
+  .room-filter {
+    justify-content: center;
   }
-  
-  .hostel-description {
-    margin-top: 20px;
-  }
-  
-  .hostel-description h2 {
-    font-size: 22px;
-    font-weight: bold;
-  }
-  
-  .hostel-description p {
-    font-size: 16px;
-    color: #444;
-  }
-  
-  /* ✅ Rooms Section */
-  .room-section {
-    margin-top: 30px;
-  }
-  
-  .room-section h2 {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  .room-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-  }
-  
-  .room-card {
-    background: #fff;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-    text-align: center;
-  }
-  
-  .room-card:hover {
-    transform: scale(1.05);
-  }
-  
-  .room-card h3 {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 10px 0;
-  }
-  
-  .room-card p {
-    font-size: 14px;
-    color: #666;
-  }
-  
-  .room-images {
-    display: flex;
-    gap: 5px;
-    margin-top: 10px;
-    overflow-x: auto;
-  }
-  
-  .room-images img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 5px;
-  }
-  
-  .book-room-btn {
-    display: block;
-    width: 100%;
-    padding: 8px;
-    margin-top: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .book-room-btn:hover {
-    background-color: #0056b3;
-  }
-  
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+.status-booked {
+  color: red;
+  font-weight: bold;
+}
+
+.status-pending {
+  color: orange;
+  font-weight: bold;
+}
+
+.status-available {
+  color: green;
+  font-weight: bold;
+}

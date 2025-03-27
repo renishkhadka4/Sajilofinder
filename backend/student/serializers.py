@@ -8,28 +8,33 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class BookingSerializer(serializers.ModelSerializer):
-    room = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
-
-    def get_room(self, obj):
-        if obj.room and obj.room.floor and obj.room.floor.hostel:
-            return {
-                "id": obj.room.id,
-                "room_number": obj.room.room_number,
-                "hostel": obj.room.floor.hostel.name
-            }
-        return None
+    room = serializers.SerializerMethodField()
 
     def get_student(self, obj):
         return {
             "id": obj.student.id,
             "username": obj.student.username,
-            "email": obj.student.email
+            "email": obj.student.email,
+        }
+
+    def get_room(self, obj):
+        return {
+            "id": obj.room.id,
+            "room_number": obj.room.room_number,
+            "floor": {
+                "id": obj.room.floor.id,
+                "hostel": {
+                    "id": obj.room.floor.hostel.id,
+                    "name": obj.room.floor.hostel.name,
+                }
+            }
         }
 
     class Meta:
         model = Booking
-        fields = ['id', 'student', 'room', 'check_in', 'check_out', 'status']
+        fields = ["id", "student", "room", "check_in", "check_out", "status", "created_at"]
+
 
 class HostelSerializer(serializers.ModelSerializer):
     class Meta:
