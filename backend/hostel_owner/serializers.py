@@ -69,6 +69,14 @@ class BookingSerializer(serializers.ModelSerializer):
 class FeedbackSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
     hostel = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Feedback
+        fields = [
+            "id", "student", "hostel", "rating", "comment", "created_at",
+            "replies", "parent"  
+        ]
 
     def get_student(self, obj):
         return {
@@ -81,15 +89,17 @@ class FeedbackSerializer(serializers.ModelSerializer):
         return {
             "id": obj.hostel.id,
             "name": obj.hostel.name,
-            "address": obj.hostel.address,
-            "city": obj.hostel.city
+            "city": obj.hostel.city,
         }
 
-    class Meta:
-        model = Feedback
-        fields = ["id", "student", "hostel", "rating", "comment", "reply", "created_at"]
+    def get_replies(self, obj):
+       
+        replies = obj.replies.all().order_by("created_at")
+        return FeedbackSerializer(replies, many=True).data
 
 
+
+    
 from rest_framework import serializers
 from .models import OwnerNotification
 

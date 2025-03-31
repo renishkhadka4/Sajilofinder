@@ -82,7 +82,7 @@ const ManageBookings = () => {
 
           <input
             type="text"
-            placeholder="🔍 Search by student name or room..."
+            placeholder=" Search by student name or room..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="booking-search"
@@ -151,13 +151,13 @@ const ManageBookings = () => {
                               className="btn-approve"
                               onClick={() => handleAction(booking.id, "approve")}
                             >
-                              ✅ Approve
+                               Approve
                             </button>
                             <button
                               className="btn-reject"
                               onClick={() => handleAction(booking.id, "reject")}
                             >
-                              ❌ Reject
+                               Reject
                             </button>
                           </div>
                         </td>

@@ -16,30 +16,28 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await api.post("login/", loginData);
-      console.log("Login API Response:", response.data); // ✅ Debug API response
-  
-      const { access, role, username } = response.data; // ✅ Get username
-  
+      console.log("Login API Response:", response.data); 
+      const { access, role, username } = response.data; //
       if (!username) {
         console.error("⚠️ Username is missing in API response. Fix backend.");
         return;
       }
   
-      // ✅ Store user details
+      //  Store user details
       localStorage.setItem("token", access);
       localStorage.setItem("role", role);
-      localStorage.setItem("user", JSON.stringify({ username })); // ✅ Store username
+      localStorage.setItem("user", JSON.stringify({ username })); //  Store username
   
-      console.log("Stored User:", localStorage.getItem("user")); // ✅ Debugging localStorage
+      console.log("Stored User:", localStorage.getItem("user")); //  Debugging localStorage
   
-      // ✅ Redirect based on role
+      //  Redirect based on role
       if (role === "HostelOwner") {
         navigate("/dashboard");
       } else {
         navigate("/");
       }
     } catch (err) {
-      console.error("Login Error:", err.response?.data); // ✅ Log error
+      console.error("Login Error:", err.response?.data); //  Log error
       setError(err.response?.data?.detail || "Login failed");
     }
   };

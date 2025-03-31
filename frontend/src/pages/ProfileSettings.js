@@ -28,7 +28,7 @@ const ProfileSettings = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUser(response.data);
-            setPreviewImage(response.data.profile_picture); // ✅ Show profile picture preview
+            setPreviewImage(response.data.profile_picture); //  Show profile picture preview
         } catch (error) {
             console.error("Error fetching profile:", error);
         } finally {
@@ -45,7 +45,7 @@ const ProfileSettings = () => {
         const file = e.target.files[0];
         if (file) {
             setUser((prevUser) => ({ ...prevUser, profile_picture: file }));
-            setPreviewImage(URL.createObjectURL(file)); // ✅ Show uploaded image preview
+            setPreviewImage(URL.createObjectURL(file)); //  Show uploaded image preview
         }
     };
 
@@ -69,8 +69,8 @@ const ProfileSettings = () => {
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
             });
 
-            setMessage("✅ Profile updated successfully!");
-            fetchUserProfile(); // ✅ Refetch updated user data
+            setMessage(" Profile updated successfully!");
+            fetchUserProfile(); //  Refetch updated user data
         } catch (error) {
             console.error("Error updating profile:", error);
             setError("⚠ Failed to update profile.");
@@ -93,8 +93,8 @@ const ProfileSettings = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            setMessage("✅ Password updated successfully!");
-            setNewPassword({ old_password: "", new_password: "" }); // ✅ Clear password fields
+            setMessage(" Password updated successfully!");
+            setNewPassword({ old_password: "", new_password: "" }); //  Clear password fields
         } catch (error) {
             console.error("Error changing password:", error);
             setError("⚠ Failed to update password.");
@@ -103,7 +103,7 @@ const ProfileSettings = () => {
 
     return (
         <div className="dashboard-layout">
-            <Sidebar /> {/* ✅ Include the Sidebar */}
+            <Sidebar /> {/*  Include the Sidebar */}
             <div className="dashboard-main">
                 <div className="profile-settings">
                     <h1>Profile Settings</h1>

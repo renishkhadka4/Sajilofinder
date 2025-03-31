@@ -6,13 +6,13 @@ import Navbar from "../components/Navbar";
 const KhaltiVerify = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [statusMessage, setStatusMessage] = useState("⏳ Verifying payment...");
+  const [statusMessage, setStatusMessage] = useState(" Verifying payment...");
 
   useEffect(() => {
     const pidx = searchParams.get("pidx");
 
     if (!pidx) {
-      setStatusMessage("❌ Invalid payment callback. No pidx provided.");
+      setStatusMessage(" Invalid payment callback. No pidx provided.");
       return;
     }
 
@@ -31,16 +31,16 @@ const KhaltiVerify = () => {
         );
 
         if (response.status === 200) {
-          setStatusMessage("✅ Payment verified successfully! Booking confirmed.");
+          setStatusMessage(" Payment verified successfully! Booking confirmed.");
           setTimeout(() => {
             navigate("/my-bookings");
-          }, 3000); // ⏳ Redirect to bookings after 3 sec
+          }, 3000); //  Redirect to bookings after 3 sec
         } else {
-          setStatusMessage("❌ Payment verification failed. Please try again.");
+          setStatusMessage(" Payment verification failed. Please try again.");
         }
       } catch (error) {
-        console.error("❌ Error verifying payment:", error);
-        setStatusMessage("❌ Error verifying payment. Try again or contact support.");
+        console.error(" Error verifying payment:", error);
+        setStatusMessage(" Error verifying payment. Try again or contact support.");
       }
     };
 

@@ -9,6 +9,7 @@ from .views import (
     BookingViewSet,
     submit_feedback,get_student_notifications
 )
+from .views import mark_all_notifications_read
 
 router = DefaultRouter()
 router.register(r'bookings', BookingViewSet)
@@ -21,6 +22,8 @@ urlpatterns = [
     path("students/profile/", StudentProfileView.as_view(), name="student-profile"),
     path("feedback/", submit_feedback, name="submit-feedback"),
     path('notifications/', get_student_notifications, name='student-notifications'),
-    path('', include(router.urls)),  # 👈 keep router at bottom
+    path("notifications/mark_all_read/", mark_all_notifications_read, name="mark-all-notifications-read"),
+
+    path('', include(router.urls)),  
 ]
 

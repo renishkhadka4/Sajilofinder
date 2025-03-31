@@ -11,11 +11,11 @@ const HostelOwnerChat = () => {
     if (storedUserId) {
       setUserId(storedUserId);
     } else {
-      console.error("❌ Hostel Owner ID not found in localStorage.");
+      console.error(" Hostel Owner ID not found in localStorage.");
     }
   }, []);
 
-  console.log("🔍 Debugging Chat Data:", { hostelId, userId, receiverId });
+  console.log(" Debugging Chat Data:", { hostelId, userId, receiverId });
 
   if (!userId || !hostelId || !receiverId) {
     return <h2>Error: Missing Chat Data</h2>;

@@ -99,7 +99,7 @@ const ManageFloorsRoomsDetail = () => {
             setFloors([...floors, { ...response.data, rooms: [] }]);
             setNewFloor({ floor_number: '', description: '' });
         } catch (error) {
-            console.error('❌ Error adding floor:', error.response?.data || error.message);
+            console.error(' Error adding floor:', error.response?.data || error.message);
             alert(`Failed to add floor: ${JSON.stringify(error.response?.data || error.message)}`);
         }
     };
@@ -116,7 +116,7 @@ const ManageFloorsRoomsDetail = () => {
             setFloors(floors.filter(floor => floor.id !== floorId));
             setConfirmDelete({ show: false, type: '', id: null });
         } catch (error) {
-            console.error('❌ Error deleting floor:', error.response?.data || error.message);
+            console.error(' Error deleting floor:', error.response?.data || error.message);
             alert(`Failed to delete floor: ${error.response?.data?.detail || error.message}`);
         } finally {
             setIsDeleting(false);
@@ -164,7 +164,7 @@ const ManageFloorsRoomsDetail = () => {
             // Exit edit mode
             setEditMode({ active: false, type: '', data: null });
         } catch (error) {
-            console.error('❌ Error updating floor:', error.response?.data || error.message);
+            console.error(' Error updating floor:', error.response?.data || error.message);
             alert(`Failed to update floor: ${JSON.stringify(error.response?.data || error.message)}`);
         }
     };
@@ -214,7 +214,7 @@ const ManageFloorsRoomsDetail = () => {
             }));
 
         } catch (error) {
-            console.error("❌ Error adding room:", error.response?.data || error.message);
+            console.error(" Error adding room:", error.response?.data || error.message);
             alert(`Failed to add room: ${JSON.stringify(error.response?.data || error.message)}`);
         }
     };
@@ -278,7 +278,7 @@ const ManageFloorsRoomsDetail = () => {
             setEditMode({ active: false, type: '', data: null });
     
         } catch (error) {
-            console.error('❌ Error updating room:', error.response?.data || error.message);
+            console.error(' Error updating room:', error.response?.data || error.message);
             alert(`Failed to update room: ${JSON.stringify(error.response?.data || error.message)}`);
         }
     };
@@ -301,7 +301,7 @@ const ManageFloorsRoomsDetail = () => {
             );
             setConfirmDelete({ show: false, type: '', id: null });
         } catch (error) {
-            console.error('❌ Error deleting room:', error.response?.data || error.message);
+            console.error(' Error deleting room:', error.response?.data || error.message);
             alert(`Failed to delete room: ${error.response?.data?.detail || error.message}`);
         } finally {
             setIsDeleting(false);

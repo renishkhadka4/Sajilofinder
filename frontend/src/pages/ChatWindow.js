@@ -17,20 +17,20 @@ const ChatWindow = ({ hostelId, userId, receiverId }) => {
 
   
     socketRef.current.onopen = () => {
-      console.log("✅ WebSocket connected");
+      console.log(" WebSocket connected");
       setConnected(true);
     };
 
     socketRef.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("📨 Message received:", data); // Add this
+      console.log(" Message received:", data); // Add this
       setMessages((prev) => [...prev, data]);
     };
     
     
   
     socketRef.current.onclose = () => {
-      console.log("❌ WebSocket disconnected");
+      console.log(" WebSocket disconnected");
       setConnected(false);
     };
   
@@ -46,10 +46,10 @@ const ChatWindow = ({ hostelId, userId, receiverId }) => {
       message: text || "",
     };
   
-    console.log("📤 Sending message:", messageObj);  // Debugging log
+    console.log(" Sending message:", messageObj);  // Debugging log
   
     if (!messageObj.sender_id || !messageObj.receiver_id || !messageObj.message) {
-      console.warn("❌ Error: Missing sender_id, receiver_id, or message.");
+      console.warn(" Error: Missing sender_id, receiver_id, or message.");
       return;
     }
   

@@ -333,13 +333,13 @@ const ManageHostels = () => {
         }
       });
 
-      toast.success("✅ Hostel added successfully!");
+      toast.success(" Hostel added successfully!");
       setShowModal(false);
       resetForm();
       fetchHostels();
 
     } catch (error) {
-      toast.error("❌ Failed to add hostel");
+      toast.error(" Failed to add hostel");
       console.error(error);
     } finally {
       setIsLoading(false);

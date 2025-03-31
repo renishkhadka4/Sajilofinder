@@ -94,16 +94,21 @@ class Booking(models.Model):
     def __str__(self):
         return f"{self.student.username} - {self.room.room_number} ({self.status})"
 
+# hostel_owner/models.py
+
+# models.py
 class Feedback(models.Model):
-    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE)
+    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="student_feedbacks")
+    hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE, related_name="feedbacks")
     rating = models.IntegerField()
     comment = models.TextField()
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     reply = models.TextField(blank=True, null=True)
-
     def __str__(self):
-        return f"{self.student.username} - {self.hostel.name} ({self.rating})"
+        return f"Feedback by {self.student.username} on {self.hostel.name}"
+
+
 
 class HostelImage(models.Model):
     hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE, related_name='images')

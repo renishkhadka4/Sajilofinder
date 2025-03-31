@@ -75,31 +75,63 @@ class DashboardView(APIView):
         })
 
 class FeedbackViewSet(viewsets.ModelViewSet):
-    queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    queryset = Feedback.objects.all()
     def get_queryset(self):
         user = self.request.user
         if user.role == "HostelOwner":
-            return Feedback.objects.filter(hostel__owner=user)
-        return Feedback.objects.filter(student=user)
-    
+            return Feedback.objects.filter(hostel__owner=user, parent__isnull=True)
+        return Feedback.objects.filter(student=user, parent__isnull=True)
+
+    def create(self, request, *args, **kwargs):
+        parent_id = request.data.get("parent")
+        if parent_id:
+            # Reply to existing feedback
+            parent = get_object_or_404(Feedback, id=parent_id)
+            reply = Feedback.objects.create(
+                student=request.user,  # can be student or owner
+                hostel=parent.hostel,
+                rating=0,  # Replies don't need a rating
+                comment=request.data.get("comment", ""),
+                parent=parent,
+            )
+
+            # 🔔 Trigger student notification
+            from student.models import Notification
+            if parent.student != request.user:  # Don't notify self-reply
+                Notification.objects.create(
+                    user=parent.student,
+                    message=f"The owner replied to your feedback on {parent.hostel.name}."
+                )
+
+            return Response(FeedbackSerializer(reply).data, status=201)
+
+        # Standard feedback submission
+        return super().create(request, *args, **kwargs)
     def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        reply = request.data.get("reply", "")
-        instance.reply = reply
-        instance.save()
+            instance = self.get_object()
+            reply = request.data.get("reply", "")
+            instance.reply = reply
+            instance.save()
 
-        # Optionally trigger notification
-        from student.models import Notification
-        Notification.objects.create(
-            user=instance.student,
-            message=f"The owner replied to your feedback on {instance.hostel.name}."
-        )
+            print("✅ Reply saved, now creating notification")  # Debug line
 
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+            from student.models import Notification
+            Notification.objects.create(
+                user=instance.student,
+                message=f"The owner replied to your feedback on {instance.hostel.name}."
+            )
+
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+    @action(detail=True, methods=["delete"], url_path="delete-reply")
+    def delete_reply(self, request, pk=None):
+        feedback = get_object_or_404(Feedback, id=pk, parent__isnull=False)  # only replies
+        if feedback.hostel.owner != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        feedback.delete()
+        return Response({"message": "Reply deleted"}, status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -160,7 +192,7 @@ class HostelViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['delete'], url_path='bulk_delete_images')  
     def bulk_delete_images(self, request, pk=None):
-        """ ❌ Delete multiple images from a hostel ❌ """
+        """  Delete multiple images from a hostel  """
         hostel = self.get_object()
         image_ids = request.data.get('image_ids', [])
 
@@ -867,3 +899,26 @@ class OwnerNotificationListView(APIView):
         notifications = OwnerNotification.objects.filter(user=request.user).order_by("-created_at")
         serializer = OwnerNotificationSerializer(notifications, many=True)
         return Response(serializer.data)
+
+
+
+from rest_framework.decorators import api_view
+from hostel_owner.models import OwnerNotification
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def mark_notification_as_read(request, notification_id):
+    try:
+        notif = OwnerNotification.objects.get(id=notification_id, user=request.user)
+        notif.is_read = True
+        notif.save()
+        return Response({"message": "Notification marked as read"}, status=200)
+    except OwnerNotification.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=404)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_all_notifications_as_read(request):
+    OwnerNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return Response({"message": "All notifications marked as read"}, status=200)

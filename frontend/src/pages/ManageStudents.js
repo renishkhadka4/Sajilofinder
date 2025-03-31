@@ -60,7 +60,8 @@ const ManageStudents = () => {
 
 useEffect(() => {
   fetchStudents();
-  fetchHostelId(); // ✅ Fetch hostel_id for owner
+  fetchHostelId(); // 
+  //  Fetch hostel_id for owner
 }, []);
 
 const fetchHostelId = async () => {
@@ -71,9 +72,9 @@ const fetchHostelId = async () => {
     });
 
     console.log("Owner Profile Data:", response.data); // Debugging
-    setHostelId(response.data.hostel_id); // ✅ Assuming API returns hostel_id
+    setHostelId(response.data.hostel_id); //  Assuming API returns hostel_id
   } catch (error) {
-    console.error("❌ Error fetching hostel ID:", error);
+    console.error(" Error fetching hostel ID:", error);
   }
 };
 
@@ -85,7 +86,7 @@ const fetchHostelId = async () => {
       await api.patch(url, {}, { headers: { Authorization: `Bearer ${token}` } });
       fetchStudents();
     } catch (error) {
-      console.error(`❌ Error during ${action}:`, error);
+      console.error(` Error during ${action}:`, error);
     }
   };
 
@@ -105,7 +106,7 @@ const fetchHostelId = async () => {
       link.click();
       link.remove();
     } catch (error) {
-      console.error("❌ Export failed:", error);
+      console.error(" Export failed:", error);
     }
   };
 

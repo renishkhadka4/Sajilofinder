@@ -37,12 +37,19 @@ const RoomDetail = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const match = bookingsRes.data.find(
-          (b) =>
-            b.room.id === parseInt(id) &&
-            b.status !== "cancelled" &&
-            b.status !== "rejected"
-        );
+        const validStatuses = ["pending", "confirmed"];  //  Active bookings only
+const match = bookingsRes.data.find(
+  (b) => b.room.id === parseInt(id) && validStatuses.includes(b.status)
+);
+
+if (match) {
+  setExistingBooking(match);
+  setBookingId(match.id);
+} else {
+  setExistingBooking(null);  //  Clear old bookings properly
+  setBookingId(null);
+}
+
 
         if (match) {
           setExistingBooking(match);
@@ -75,21 +82,21 @@ const RoomDetail = () => {
         }
 
       } catch (error) {
-        console.error("❌ Error fetching details:", error);
+        console.error(" Error fetching details:", error);
       }
     };
 
     fetchDetails();
-  }, [id, existingBooking]); // Run when `id` or `existingBooking` changes
+  }, [id]); // Run when `id` or `existingBooking` changes
 
   const handleBooking = async () => {
     if (!checkIn || !checkOut) {
-      alert("❗ Please select both check-in and check-out dates.");
+      alert(" Please select both check-in and check-out dates.");
       return;
     }
 
     if (!isBookingAllowed) {
-      alert("❗ You cannot book a room due to recent cancellation.");
+      alert(" You cannot book a room due to recent cancellation.");
       return;
     }
 
@@ -106,19 +113,19 @@ const RoomDetail = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("✅ Booking request sent! You can now pay the security deposit.");
+      alert(" Booking request sent! You can now pay the security deposit.");
       setBookingId(bookingRes.data.id);
       setExistingBooking(bookingRes.data);
       setRoomStatus("Pending");  // Set status to pending after booking
     } catch (error) {
-      console.error("❌ Booking failed:", error);
-      alert("❌ Booking failed. Please try again.");
+      console.error(" Booking failed:", error);
+      alert(" Booking failed. Please try again.");
     }
   };
 
   const handlePayment = async () => {
     if (!bookingId) {
-      alert("❗ Please book the room first before paying.");
+      alert(" Please book the room first before paying.");
       return;
     }
 
@@ -135,11 +142,11 @@ const RoomDetail = () => {
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
-        alert("❌ Payment initiation failed");
+        alert(" Payment initiation failed");
       }
     } catch (error) {
-      console.error("❌ Payment initiation failed:", error);
-      alert("❌ Payment failed. Try again.");
+      console.error(" Payment initiation failed:", error);
+      alert(" Payment failed. Try again.");
     }
   };
 
@@ -149,45 +156,59 @@ const RoomDetail = () => {
       await api.post(`/students/bookings/${bookingId}/cancel/`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("❌ Booking cancelled.");
+      alert(" Booking cancelled.");
       setExistingBooking(null);
       setBookingId(null);
       setRoomStatus("Available");
     } catch (err) {
       console.error("Cancel failed:", err);
-      alert("❌ Could not cancel. Try again.");
+      alert(" Could not cancel. Try again.");
     }
   };
-
+  const cancelPolicy = hostel?.cancellation_policy || {
+    full_refund_days: 7,
+    partial_refund_days: 3,
+    partial_refund_percentage: 50
+  };
+  
   const handleCancelConfirmedBooking = async () => {
-    const cancelPolicy = hostel.cancellation_policy; // assuming cancellation policy exists in the hostel object
+    //  Use fallback if cancellation_policy is undefined
+    const cancelPolicy = hostel?.cancellation_policy || {
+      full_refund_days: 7,
+      partial_refund_days: 3,
+      partial_refund_percentage: 50,
+    };
+  
     const bookingDate = new Date(existingBooking.check_in);
     const currentDate = new Date();
     const differenceInDays = Math.floor((bookingDate - currentDate) / (1000 * 60 * 60 * 24));
-
-    if (differenceInDays < cancelPolicy.full_refund_days) {
-      alert("❌ You are too late to cancel for a full refund.");
-    } else if (differenceInDays < cancelPolicy.partial_refund_days) {
-      alert(`❗ You can get a partial refund of ${cancelPolicy.partial_refund_percentage}%`);
+  
+    if (differenceInDays >= cancelPolicy.full_refund_days) {
+      alert(" Full refund available.");
+    } else if (differenceInDays >= cancelPolicy.partial_refund_days) {
+      alert(` You can get a partial refund of ${cancelPolicy.partial_refund_percentage}%`);
     } else {
-      alert("✅ Full refund available.");
+      alert(" You are too late to cancel for a refund.");
     }
-
-    // Proceed with cancellation
+  
+    //  Cancel using hostel_owner endpoint
     try {
       const token = localStorage.getItem("token");
-      await api.post(`/students/bookings/${bookingId}/cancel/`, {}, {
+      await api.patch(`/hostel_owner/bookings/${bookingId}/cancel_booking/`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("✅ Booking cancelled successfully.");
+  
+      alert(" Booking cancelled successfully.");
       setExistingBooking(null);
       setBookingId(null);
       setRoomStatus("Available");
     } catch (err) {
       console.error("Cancel failed:", err);
-      alert("❌ Could not cancel. Try again.");
+      alert(" Could not cancel. Try again.");
     }
   };
+  
+  
 
   if (!room || !floor || !hostel) {
     return <p className="loading">Loading room details...</p>;
@@ -209,54 +230,52 @@ const RoomDetail = () => {
         </p>
 
         <div className="booking-section">
-        {existingBooking ? (
-  <>
-    <p className="info-text">📌 You have already booked this room.</p>
-    <p>Status: <b>{existingBooking.status}</b></p>
+  {existingBooking && !["cancelled", "rejected"].includes(existingBooking.status) ? (
+    <>
+      <p className="info-text">📌 You have already booked this room.</p>
+      <p>Status: <b>{existingBooking.status}</b></p>
 
-    {existingBooking.status === "pending" && (
-      <>
-        <button className="cancel-btn" onClick={handleCancelBooking}>
-          ❌ Cancel Booking
-        </button>
-        <button
-          className="book-room-btn"
-          onClick={handlePayment}
-          style={{ marginLeft: "10px", backgroundColor: "#4CAF50" }}
-        >
-          💰 Pay Security Deposit
-        </button>
-      </>
-    )}
+      {existingBooking.status === "pending" && (
+        <>
+          <button className="cancel-btn" onClick={handleCancelBooking}>
+            ❌ Cancel Booking
+          </button>
+          <button
+            className="book-room-btn"
+            onClick={handlePayment}
+            style={{ marginLeft: "10px", backgroundColor: "#4CAF50" }}
+          >
+            💰 Pay Security Deposit
+          </button>
+        </>
+      )}
 
-    {existingBooking.status === "confirmed" && (
-      <button className="cancel-btn" onClick={handleCancelConfirmedBooking}>
-        ❌ Cancel Confirmed Booking
+      {existingBooking.status === "confirmed" && (
+        <button className="cancel-btn" onClick={handleCancelConfirmedBooking}>
+          ❌ Cancel Confirmed Booking
+        </button>
+      )}
+    </>
+  ) : roomStatus === "Available" ? (
+    <>
+      <label>
+        Check-in Date:
+        <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
+      </label>
+      <label>
+        Check-out Date:
+        <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+      </label>
+      <button className="book-room-btn" onClick={handleBooking}>
+        Book Room
       </button>
-    )}
-  </>
+    </>
+  ) : (
+    <p className="warning-text">❌ Room is not available for booking.</p>
+  )}
+</div>
 
 
-          ) : roomStatus === "Available" ? (
-            <>
-              <label>
-                Check-in Date:
-                <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
-              </label>
-              <label>
-                Check-out Date:
-                <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
-              </label>
-              <button className="book-room-btn" onClick={handleBooking}>
-                Book Room
-              </button>
-         
-
-            </>
-          ) : (
-            <p className="warning-text">❌ Room is not available for booking.</p>
-          )}
-        </div>
 
         <div className="room-images">
           <h3>Room Images</h3>

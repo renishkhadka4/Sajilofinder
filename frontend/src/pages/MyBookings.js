@@ -47,7 +47,7 @@ const MyBookings = () => {
         hostels.forEach(h => (hMap[h.data.id] = h.data));
         setHostelMap(hMap);
       } catch (err) {
-        console.error("❌ Error fetching bookings or hostel/floor:", err);
+        console.error(" Error fetching bookings or hostel/floor:", err);
       }
     };
 

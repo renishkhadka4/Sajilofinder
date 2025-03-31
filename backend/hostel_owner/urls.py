@@ -5,7 +5,7 @@ from .views import (
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
     FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView,OwnerNotificationListView
 )
-
+from .views import mark_notification_as_read, mark_all_notifications_as_read
 router = DefaultRouter()
 router.register(r'hostels', HostelViewSet)
 router.register(r'rooms', RoomViewSet)
@@ -27,6 +27,9 @@ urlpatterns = [
     path("download-report/<str:report_type>/<str:format_type>/", DownloadReportView.as_view(), name="download_report"),
     path("chat-history/<int:hostel_id>/", ChatHistoryView.as_view(), name="chat_history"),
     path('notifications/', OwnerNotificationListView.as_view(), name='owner_notifications'),
+
+    path("notifications/<int:notification_id>/mark_read/", mark_notification_as_read, name="mark_notification_as_read"),
+    path("notifications/mark_all_read/", mark_all_notifications_as_read, name="mark_all_notifications_as_read"),
 
     
 ]

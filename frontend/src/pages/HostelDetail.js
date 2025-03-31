@@ -12,13 +12,43 @@ const HostelDetail = () => {
   const [recentHostels, setRecentHostels] = useState([]);
   const [filter, setFilter] = useState("All");
   const [studentBookings, setStudentBookings] = useState([]);
-
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [newFeedback, setNewFeedback] = useState({ rating: "", comment: "" });
+  const [canGiveFeedback, setCanGiveFeedback] = useState(true);
+  
   useEffect(() => {
     fetchHostel();
     fetchFloors();
     fetchRecentHostels();
-    fetchStudentBookings();  // Fetch student bookings to check room status
+    fetchStudentBookings();
+    fetchFeedbacks();
+    checkFeedbackPermission();  
   }, [id]);
+  
+  const fetchFeedbacks = async () => {
+    try {
+      const res = await api.get(`/hostel_owner/feedback/?hostel_id=${id}`);
+      setFeedbackList(res.data);
+    } catch (err) {
+      console.error("Error fetching feedback:", err);
+    }
+  };
+
+  const checkFeedbackPermission = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/students/bookings/my-history/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      const hasConfirmed = res.data.some(
+        (b) => b.room.floor.hostel.id === parseInt(id) && b.status === "confirmed"
+      );
+      setCanGiveFeedback(hasConfirmed);
+    } catch (err) {
+      console.error("Permission check failed:", err);
+    }
+  };
 
   const fetchHostel = async () => {
     try {
@@ -79,13 +109,36 @@ const HostelDetail = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("✅ Booking request sent!");
+      alert(" Booking request sent!");
       navigate("/my-bookings");
     } catch (err) {
       console.error("Booking failed:", err);
-      alert("❌ Booking failed. Try again.");
+      alert(" Booking failed. Try again.");
     }
   };
+
+
+  const handleSubmitFeedback = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await api.post("/students/feedback/", {
+        hostel_id: hostel.id,
+        rating: newFeedback.rating,
+        comment: newFeedback.comment.trim(),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      alert(" Feedback submitted!");
+      setNewFeedback({ rating: "", comment: "" });
+      fetchFeedbacks();
+    } catch (err) {
+      console.error("Feedback submission error:", err);
+      alert(" You may not have permission or something went wrong.");
+    }
+  };
+  
+  
 
   const getRoomStatus = (roomId, floorId) => {
     const booking = studentBookings.find(
@@ -217,6 +270,53 @@ const HostelDetail = () => {
             })}
           </div>
         </div>
+        <div className="feedback-section">
+  <h2>Student Feedback</h2>
+
+  {canGiveFeedback && (
+    <div className="submit-feedback">
+      <textarea
+        rows="3"
+        placeholder="Write your feedback..."
+        value={newFeedback.comment}
+        onChange={(e) =>
+          setNewFeedback({ ...newFeedback, comment: e.target.value })
+        }
+      />
+      <select
+        value={newFeedback.rating}
+        onChange={(e) =>
+          setNewFeedback({ ...newFeedback, rating: e.target.value })
+        }
+      >
+        <option value="">Select Rating</option>
+        {[5, 4, 3, 2, 1].map((r) => (
+          <option key={r} value={r}>
+            {"⭐".repeat(r)} ({r})
+          </option>
+        ))}
+      </select>
+      <button onClick={handleSubmitFeedback}>Submit Feedback</button>
+    </div>
+  )}
+
+  {feedbackList.length > 0 ? (
+    feedbackList.map((fb) => (
+      <div key={fb.id} className="feedback-card">
+        <p><strong>{fb.student.username}</strong> ({fb.rating}⭐)</p>
+        <p>{fb.comment}</p>
+        {fb.replies &&
+          fb.replies.map((r) => (
+            <div key={r.id} className="reply-comment">
+              <p><strong>↪ {r.student.username}</strong>: {r.comment}</p>
+            </div>
+          ))}
+      </div>
+    ))
+  ) : (
+    <p>No feedback yet.</p>
+  )}
+</div>
 
         <div className="recent-hostels">
           <h2>Recent Hostels</h2>

@@ -143,7 +143,7 @@ const StudentBookingDetail = () => {
           <p>To: {booking.check_out}</p>
           <p>Status: <b>{booking.status}</b></p>
           {booking.status === "confirmed" && (
-            <p className="success-msg">✅ Payment Successful</p>
+            <p className="success-msg"> Payment Successful</p>
           )}
         </div>
 
