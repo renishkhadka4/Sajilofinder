@@ -21,7 +21,7 @@ const Hostels = () => {
 
   return (
     <div>
-      <Navbar /> {/* ✅ Add Navbar */}
+      <Navbar /> 
       <div className="hostels-container">
         <h1 className="page-title">Available Hostels</h1>
         <div className="hostel-grid">

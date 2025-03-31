@@ -17,6 +17,7 @@ class CustomUser(AbstractUser):
     is_verified = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True) 
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -29,3 +30,6 @@ class CustomUser(AbstractUser):
 
     def is_student(self):
         return self.role == self.STUDENT
+    
+
+    unread_messages = models.IntegerField(default=0)  # ✅ Track unread messages

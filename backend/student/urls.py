@@ -1,16 +1,29 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import (
     HostelSearchView, 
     StudentBookingHistoryView, 
     CancelBookingView, 
     StudentProfileView,
-    BookHostelView
+    BookHostelView,
+    BookingViewSet,
+    submit_feedback,get_student_notifications
 )
+from .views import mark_all_notifications_read
+
+router = DefaultRouter()
+router.register(r'bookings', BookingViewSet)
 
 urlpatterns = [
     path("hostels/search/", HostelSearchView.as_view(), name="hostel-search"),
-    path("bookings/my-history/", StudentBookingHistoryView.as_view(), name="booking-history"),
+    path("bookings/manual/", BookHostelView.as_view(), name="book-hostel-manual"),  # 👈 changed
     path("bookings/<int:booking_id>/cancel/", CancelBookingView.as_view(), name="cancel-booking"),
+    path("bookings/my-history/", StudentBookingHistoryView.as_view(), name="booking-history"),
     path("students/profile/", StudentProfileView.as_view(), name="student-profile"),
-    path("bookings/", BookHostelView.as_view(), name="book-hostel"),
+    path("feedback/", submit_feedback, name="submit-feedback"),
+    path('notifications/', get_student_notifications, name='student-notifications'),
+    path("notifications/mark_all_read/", mark_all_notifications_read, name="mark-all-notifications-read"),
+
+    path('', include(router.urls)),  
 ]
+

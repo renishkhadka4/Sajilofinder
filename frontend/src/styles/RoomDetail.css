@@ -1,0 +1,42 @@
+.room-detail-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .room-detail-container h1 {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  
+  .room-detail-container p {
+    font-size: 16px;
+    margin: 4px 0;
+  }
+  
+  .room-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .room-images img {
+    width: 200px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .back-btn {
+    margin-bottom: 10px;
+    background: #eee;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  

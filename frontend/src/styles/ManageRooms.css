@@ -1,204 +1,266 @@
-/* ManageRooms.css */
-
-/* 🌟 General Styles */
-.manage-rooms-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    font-family: 'Arial', sans-serif;
-    background: #f4f7fc;
+/* Main Dashboard Layout */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-/* 🌟 Navigation Bar */
-.dashboard-nav {
+.dashboard-main {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 32px;
+    position: relative;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.page-header p {
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+/* Loading State */
+.loading-container {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    background: #2c3e50;
-    padding: 15px 20px;
-    border-radius: 8px;
-}
-
-.dashboard-nav h1 {
-    color: #fff;
-    font-size: 22px;
-}
-
-.dashboard-nav ul {
-    list-style: none;
-    display: flex;
-    gap: 20px;
-}
-
-.dashboard-nav ul li {
-    display: inline;
-}
-
-.dashboard-nav ul li a {
-    text-decoration: none;
-    color: #ecf0f1;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.dashboard-nav ul li a:hover {
-    color: #3498db;
-}
-
-.dashboard-nav button {
-    background: #e74c3c;
-    border: none;
-    padding: 8px 15px;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: 0.3s;
-}
-
-.dashboard-nav button:hover {
-    background: #c0392b;
-}
-
-/* 🌟 Form Section */
-.add-room-form {
-    background: white;
-    padding: 20px;
-    margin-top: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.add-room-form input,
-.add-room-form select {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-}
-
-.add-room-form button {
-    background: #27ae60;
-    color: white;
-    padding: 10px 15px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: 0.3s;
-    width: 100%;
-}
-
-.add-room-form button:hover {
-    background: #218c54;
-}
-
-/* 🌟 Search Bar */
-.search-bar {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    margin-top: 20px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
-
-/* 🌟 Room Table */
-.room-table {
-    width: 100%;
-    margin-top: 20px;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.room-table th, .room-table td {
-    padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-}
-
-.room-table th {
-    background: #2c3e50;
-    color: white;
-}
-
-.room-table tr:hover {
-    background: #f1f1f1;
-}
-
-/* 🌟 Action Buttons */
-.room-table button {
-    padding: 6px 12px;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: 0.3s;
-    margin: 5px;
-}
-
-.room-table .edit-btn {
-    background: #3498db;
-    color: white;
-}
-
-.room-table .edit-btn:hover {
-    background: #2980b9;
-}
-
-.room-table .delete-btn {
-    background: #e74c3c;
-    color: white;
-}
-
-.room-table .delete-btn:hover {
-    background: #c0392b;
-}
-
-/* 🌟 Image Styling */
-.room-images {
-    display: flex;
-    gap: 5px;
     justify-content: center;
-    flex-wrap: wrap;
+    height: 400px;
 }
 
-.room-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 5px;
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(66, 153, 225, 0.15);
+    border-radius: 50%;
+    border-top-color: #4299e1;
+    animation: spin 1s cubic-bezier(0.55, 0.055, 0.675, 0.19) infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Hostels Grid */
+.hostels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 28px;
+}
+
+/* Hostel Card */
+.hostel-card {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    height: 100%;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.hostel-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.09);
+}
+
+.hostel-image {
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.image-container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.hostel-image img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border: 2px solid #ddd;
-    transition: 0.3s;
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.room-image:hover {
-    border-color: #3498db;
-    transform: scale(1.1);
+.hostel-card:hover .hostel-image img {
+    transform: scale(1.05);
 }
 
-/* 🌟 Responsive Design */
+.image-count {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background-color: rgba(0, 0, 0, 0.65);
+    color: white;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+}
+
+.hostel-info {
+    padding: 24px;
+    flex-grow: 1;
+}
+
+.hostel-info h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 16px;
+    line-height: 1.3;
+}
+
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    color: #4a5568;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.icon {
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    opacity: 0.9;
+}
+
+.card-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f1f5f9;
+    background-color: #f8fafc;
+}
+
+.manage-btn {
+    width: 100%;
+    padding: 10px 0;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
+}
+
+.manage-btn:hover {
+    background-color: #2563eb;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* Empty State */
+.no-hostels {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.empty-icon {
+    font-size: 56px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.no-hostels p {
+    font-size: 18px;
+    color: #4a5568;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.add-hostel-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
+}
+
+.add-hostel-btn:hover {
+    background-color: #2563eb;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .hostels-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
-    .dashboard-nav {
-        flex-direction: column;
-        text-align: center;
+    .hostels-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px;
     }
-
-    .dashboard-nav ul {
-        flex-direction: column;
-        padding: 10px;
+    
+    .dashboard-main {
+        padding: 24px 20px;
     }
-
-    .room-table th, .room-table td {
-        font-size: 14px;
+    
+    .page-header h1 {
+        font-size: 28px;
     }
+}
 
-    .add-room-form button {
-        width: auto;
+@media (max-width: 480px) {
+    .hostels-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hostel-image {
+        height: 180px;
+    }
+    
+    .page-header {
+        margin-bottom: 24px;
     }
 }

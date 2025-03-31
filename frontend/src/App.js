@@ -14,6 +14,14 @@ import Index from "./pages/index";
 import Navbar from "./components/Navbar";
 import Hostels from "./pages/Hostels";
 import HostelDetail from "./pages/HostelDetail";
+import ManageHostelDetail from './pages/ManageHostelDetail';
+import ManageFloorsRoomsDetail from './pages/ManageFloorsRoomsDetail';
+import ProfileSettings from './pages/ProfileSettings';
+import HostelOwnerChat from './pages/HostelOwnerChat';
+import RoomDetail from "./pages/RoomDetail";
+import KhaltiVerify from "./pages/KhaltiVerfiy";
+import MyBookings from "./pages/MyBookings"; 
+import StudentBookingDetail from './pages/StudentBookingDetail';
 
 
 // Protect routes based on user roles
@@ -33,14 +41,32 @@ function App() {
         <Route path="/hostel-dashboard" element={<ProtectedRoute role="HostelOwner"><HostelDashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute role="HostelOwner"><Dashboard /></ProtectedRoute>} />
         <Route path="/manage-hostels" element={<ProtectedRoute role="HostelOwner"><ManageHostels /></ProtectedRoute>} />
-        <Route path="/manage-rooms" element={<ProtectedRoute role="HostelOwner"><ManageRooms /></ProtectedRoute>} />
+        <Route path="/manage-rooms" element={<ProtectedRoute role="HostelOwner"><ManageRooms /></ProtectedRoute>}  />
         <Route path="/bookings" element={<ProtectedRoute role="HostelOwner"><Bookings /></ProtectedRoute>} />
         <Route path="/students" element={<ProtectedRoute role="HostelOwner"><Students /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute role="HostelOwner"><Feedback /></ProtectedRoute>} />
         <Route path="/hostels" element={<Hostels />} />
         <Route path="/hostel/:id" element={<HostelDetail />} />
+        <Route path="/manage-hostels/:id" element={<ManageHostelDetail />} />
+        <Route path="/manage-rooms/:id" element={<ProtectedRoute role="HostelOwner"><ManageFloorsRoomsDetail /></ProtectedRoute>} />
         <Route path="/" element={<Index />} />
-        
+        <Route path="/profile-settings" element={<ProtectedRoute role="HostelOwner"><ProfileSettings /></ProtectedRoute>} />
+        <Route path="/room/:id" element={<RoomDetail />} />
+        <Route path="/khalti/verify" element={<KhaltiVerify />} />
+        <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/student/bookings/:id" element={<StudentBookingDetail />} />
+
+
+        <Route
+  path="/chat/:hostelId/:receiverId"
+  element={
+    <ProtectedRoute role="HostelOwner">
+      <HostelOwnerChat />
+    </ProtectedRoute>
+  }
+/>
+
+
       </Routes>
     </Router>
   );

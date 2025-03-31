@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getUser } from "../utils/auth";
-import api from "../api/axios"; // ✅ Ensure axios is configured
+import api from "../api/axios"; 
 import "../styles/index.css"; // Import CSS file
 import Navbar from "../components/Navbar";
-import registerImage from "../Assests/hostel.jpg"; // ✅ Fixed path
+import registerImage from "../Assests/hostel.jpg"; 
 import hostelRegister from "../Assests/registerhostel.png";
 import studentRegister from "../Assests/studentregister.png";
 
-const API_BASE_URL = "http://localhost:8000"; // ✅ Ensure this matches Django settings
+const API_BASE_URL = "http://localhost:8000"; 
 
 const Index = () => {
   const [user, setUser] = useState(null);
@@ -19,7 +19,7 @@ const Index = () => {
     setUser(loggedInUser);
   }, []);
 
-  // ✅ Fetch available hostels from backend
+  //  Fetch available hostels from backend
   useEffect(() => {
     api.get("/hostel_owner/hostels/")
       .then((response) => {
@@ -32,7 +32,7 @@ const Index = () => {
 
   return (
     <div>
-      {/* ✅ Navbar Only on Index Page */}
+      {/*  Navbar Only on Index Page */}
       <Navbar />
 
       {/* Hero Section */}
@@ -102,7 +102,7 @@ const Index = () => {
     <div className="hostel-list">
         {hostels.map((hostel) => (
             <div key={hostel.id} className="hostel-card">
-                {/* ✅ Display Image from API or Placeholder */}
+                {/*  Display Image from API or Placeholder */}
                 {hostel.images.length > 0 && hostel.images[0].image ? (
                     <img 
                         src={hostel.images[0].image.startsWith("http") ? hostel.images[0].image : `${API_BASE_URL}${hostel.images[0].image}`} 

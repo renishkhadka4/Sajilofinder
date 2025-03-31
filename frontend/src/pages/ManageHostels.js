@@ -1,27 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ToastContainer, toast } from 'react-toastify';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import imageCompression from 'browser-image-compression';
+import 'react-toastify/dist/ReactToastify.css';
 import api from '../api/axios';
+import Sidebar from '../pages/Sidebar';
 import '../styles/ManageHostels.css';
 
+const API_BASE_URL = "http://localhost:8000";
+
 const ManageHostels = () => {
+  const navigate = useNavigate();
   const [hostels, setHostels] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [previewImages, setPreviewImages] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formValidation, setFormValidation] = useState({
+    step1: false,
+    step2: false,
+    step3: false,
+    step4: false
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     address: '',
     description: '',
-    phone: '',
+    contact_number: '',
     email: '',
+    established_year: new Date().getFullYear(),
     city: '',
     state: '',
     zip: '',
     googleMapsLink: '',
+    nearby_colleges: '',
+    nearby_markets: '',
+    cancellation_policy: {
+      full_refund_days: '',
+      partial_refund_days: '',
+      partial_refund_percentage: '',
+    },
     facilities: {
       wifi: false,
       parking: false,
       laundry: false,
-      security: false,
-      mess: false,
+      security_guard: false,
+      mess_service: false,
+    },
+    room_features: {
+      attached_bathroom: false,
+      air_conditioning: false,
+      heater: false,
+      balcony: false,
     },
     pricing: {
       minRent: '',
@@ -29,39 +62,71 @@ const ManageHostels = () => {
       securityDeposit: '',
     },
     rules: {
-      smoking: false,
-      alcohol: false,
-      pets: false,
-      visitingHours: false,
+      smoking_allowed: false,
+      alcohol_allowed: false,
+      pets_allowed: false,
+      visiting_hours: false,
     },
-    images: [] // New field for images
+    images: []
   });
 
   useEffect(() => {
     fetchHostels();
   }, []);
 
-  // Refresh the access token using the stored refresh token.
+  useEffect(() => {
+    validateCurrentStep();
+  }, [formData, currentStep]);
+
+  const validateCurrentStep = () => {
+    let isValid = false;
+    
+    switch(currentStep) {
+      case 1:
+        isValid = formData.name.trim() !== '' && 
+                 formData.description.trim() !== '';
+        break;
+      case 2:
+        isValid = formData.address.trim() !== '' && 
+                 formData.city.trim() !== '' && 
+                 formData.state.trim() !== '' && 
+                 formData.zip.trim() !== '';
+        break;
+      case 3:
+        isValid = formData.pricing.minRent.toString().trim() !== '' && 
+                 formData.pricing.maxRent.toString().trim() !== '';
+        break;
+      case 4:
+        isValid = true; // Facilities and rules are optional
+        break;
+      default:
+        isValid = false;
+    }
+    
+    setFormValidation(prev => ({
+      ...prev,
+      [`step${currentStep}`]: isValid
+    }));
+  };
+
   const refreshAccessToken = async () => {
     try {
       const refreshToken = localStorage.getItem('refresh');
       if (!refreshToken) {
-        console.error('No refresh token found');
-        window.location.href = '/login';
+        navigate('/login');
         return null;
       }
       const response = await api.post('/api/token/refresh/', { refresh: refreshToken });
       localStorage.setItem('token', response.data.access);
       return response.data.access;
     } catch (error) {
-      console.error('Error refreshing token:', error.response?.data || error.message);
-      window.location.href = '/login';
+      navigate('/login');
       return null;
     }
   };
 
-  // Fetch the list of hostels.
   const fetchHostels = async () => {
+    setIsLoading(true);
     try {
       let token = localStorage.getItem('token');
       if (!token) token = await refreshAccessToken();
@@ -70,37 +135,66 @@ const ManageHostels = () => {
       });
       setHostels(response.data);
     } catch (error) {
+      toast.error("Error fetching hostels");
       console.error('Error fetching hostels:', error.response?.data || error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle changes for both simple and nested fields.
+  const compressAndPreviewImages = async (files) => {
+    const compressedFiles = [];
+    const previews = [];
+    try {
+      for (let file of files) {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1024,
+          useWebWorker: true,
+        });
+        compressedFiles.push(compressed);
+        previews.push(URL.createObjectURL(compressed));
+      }
+      setFormData((prev) => ({ ...prev, images: compressedFiles }));
+      setPreviewImages(previews);
+    } catch (error) {
+      toast.error("Error processing images");
+      console.error('Error compressing images:', error);
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 10) {
+      toast.error("Maximum 10 images allowed.");
+      return;
+    }
+    compressAndPreviewImages(files);
+  };
+
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const reordered = Array.from(formData.images);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setFormData((prev) => ({ ...prev, images: reordered }));
+    
+    const reorderedPreviews = Array.from(previewImages);
+    const [movedPreview] = reorderedPreviews.splice(result.source.index, 1);
+    reorderedPreviews.splice(result.destination.index, 0, movedPreview);
+    setPreviewImages(reorderedPreviews);
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name.includes('facilities.')) {
-      const field = name.split('.')[1];
+    
+    if (name.includes('.')) {
+      const [section, field] = name.split('.');
       setFormData(prev => ({
         ...prev,
-        facilities: {
-          ...prev.facilities,
-          [field]: type === 'checkbox' ? checked : value,
-        }
-      }));
-    } else if (name.includes('pricing.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        pricing: {
-          ...prev.pricing,
-          [field]: value,
-        }
-      }));
-    } else if (name.includes('rules.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        rules: {
-          ...prev.rules,
+        [section]: {
+          ...prev[section],
           [field]: type === 'checkbox' ? checked : value,
         }
       }));
@@ -112,293 +206,541 @@ const ManageHostels = () => {
     }
   };
 
-  // Handle image upload, enforcing a maximum of 10 images.
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 10) {
-        alert("You can upload a maximum of 10 images.");
-        return;
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this hostel?")) return;
     
-    console.log("✅ Selected Images:", files);  // ✅ Debugging
+    try {
+      let token = localStorage.getItem('token');
+      if (!token) token = await refreshAccessToken();
+      
+      await api.delete(`/hostel_owner/hostels/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success("Hostel deleted successfully!");
+      fetchHostels();
+    } catch (error) {
+      toast.error("Failed to delete hostel");
+      console.error('Error deleting hostel:', error.response?.data || error.message);
+    }
+  };
 
-    setFormData((prev) => ({
-        ...prev,
-        images: files,  // ✅ Store images properly
-    }));
-};
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      address: '',
+      description: '',
+      contact_number: '',
+      email: '',
+      established_year: new Date().getFullYear(),
+      city: '',
+      state: '',
+      zip: '',
+      googleMapsLink: '',
+      nearby_colleges: '',
+      nearby_markets: '',
+      cancellation_policy: {
+        full_refund_days: '',
+        partial_refund_days: '',
+        partial_refund_percentage: '',
+      },
+      facilities: {
+        wifi: false,
+        parking: false,
+        laundry: false,
+        security_guard: false,
+        mess_service: false,
+      },
+      room_features: {
+        attached_bathroom: false,
+        air_conditioning: false,
+        heater: false,
+        balcony: false,
+      },
+      pricing: {
+        minRent: '',
+        maxRent: '',
+        securityDeposit: '',
+      },
+      rules: {
+        smoking_allowed: false,
+        alcohol_allowed: false,
+        pets_allowed: false,
+        visiting_hours: false,
+      },
+      images: []
+    });
+    setPreviewImages([]);
+    setCurrentStep(1);
+  };
 
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
 
-  // Submit the form using FormData to include files and nested JSON fields.
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-        let token = localStorage.getItem('token');
-        if (!token) token = await refreshAccessToken();
+      let token = localStorage.getItem('token');
+      if (!token) token = await refreshAccessToken();
 
-        const data = new FormData();
-        data.append('name', formData.name);
-        data.append('address', formData.address);
-        data.append('description', formData.description);
-        data.append('phone', formData.phone || '');
-        data.append('email', formData.email);
-        data.append('established_year', formData.established_year || '');
-        data.append('city', formData.city || '');
-        data.append('state', formData.state || '');
-        data.append('zip_code', formData.zip || '');
-        data.append('google_maps_link', formData.googleMapsLink || '');
-        data.append('nearby_colleges', formData.nearby_colleges || '');
-        data.append('nearby_markets', formData.nearby_markets || '');
-        
-        // ✅ Ensure facilities are properly sent as boolean values
-        data.append('wifi', formData.facilities.wifi ? 'true' : 'false');
-        data.append('parking', formData.facilities.parking ? 'true' : 'false');
-        data.append('laundry', formData.facilities.laundry ? 'true' : 'false');
-        data.append('security_guard', formData.facilities.security_guard ? 'true' : 'false');
-        data.append('mess_service', formData.facilities.mess_service ? 'true' : 'false');
-        data.append('attached_bathroom', formData.facilities.attached_bathroom ? 'true' : 'false');
-        data.append('air_conditioning', formData.facilities.air_conditioning ? 'true' : 'false');
-        data.append('heater', formData.facilities.heater ? 'true' : 'false');
-        data.append('balcony', formData.facilities.balcony ? 'true' : 'false');
+      const data = new FormData();
+      const boolToStr = val => (val === true || val === 'true') ? 'true' : 'false';
 
-        // ✅ Ensure pricing values are correctly added
-        data.append('rent_min', formData.pricing.minRent || '');
-        data.append('rent_max', formData.pricing.maxRent || '');
-        data.append('security_deposit', formData.pricing.securityDeposit || '');
-        
-        // ✅ Append rules
-        data.append('smoking_allowed', formData.rules.smoking ? 'true' : 'false');
-        data.append('alcohol_allowed', formData.rules.alcohol ? 'true' : 'false');
-        data.append('pets_allowed', formData.rules.pets ? 'true' : 'false');
-        data.append('visiting_hours', formData.rules.visitingHours || '');
+      // Basic fields
+      data.append('name', formData.name);
+      data.append('address', formData.address);
+      data.append('description', formData.description);
+      data.append('phone', formData.contact_number);
+      data.append('email', formData.email);
+      data.append('established_year', formData.established_year);
+      data.append('city', formData.city);
+      data.append('state', formData.state);
+      data.append('zip_code', formData.zip);
+      data.append('google_maps_link', formData.googleMapsLink);
+      data.append('nearby_colleges', formData.nearby_colleges);
+      data.append('nearby_markets', formData.nearby_markets);
 
-        // ✅ Ensure images are uploaded correctly
-        
-        if (formData.images && formData.images.length > 0) {
-            formData.images.forEach((image) => {
-                data.append("images", image, image.name);  // ✅ Append image file with name
-            });
-        } else {
-            console.warn("No images selected.");
+      // Facilities, Features, Rules
+      Object.entries(formData.facilities).forEach(([k, v]) => data.append(k, boolToStr(v)));
+      Object.entries(formData.room_features).forEach(([k, v]) => data.append(k, boolToStr(v)));
+      Object.entries(formData.rules).forEach(([k, v]) => data.append(k, boolToStr(v)));
+
+      // Pricing
+      data.append('rent_min', formData.pricing.minRent);
+      data.append('rent_max', formData.pricing.maxRent);
+      data.append('security_deposit', formData.pricing.securityDeposit);
+
+      // Cancellation Policy (JSON)
+      data.append('cancellation_policy', JSON.stringify(formData.cancellation_policy));
+
+      // Images
+      formData.images.forEach((img) => data.append('images', img));
+
+      await api.post('/hostel_owner/hostels/', data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
-        const response = await api.post('/hostel_owner/hostels/', data, {
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
-        });
+      });
 
-        console.log("Response:", response.data); // ✅ Debug Response
-        fetchHostels(); // ✅ Refresh data immediately after adding
+      toast.success(" Hostel added successfully!");
+      setShowModal(false);
+      resetForm();
+      fetchHostels();
+
     } catch (error) {
-        console.error('Error adding hostel:', error.response?.data || error.message);
-        alert(`Failed to add hostel: ${JSON.stringify(error.response?.data || error.message)}`);
+      toast.error(" Failed to add hostel");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-};
+  };
 
+  // Calculate the number of facilities for a hostel
+  const getFacilitiesCount = (hostel) => {
+    if (!hostel) return 0;
+    
+    // Count all true/enabled facilities
+    let count = 0;
+    
+    // Common facility properties in the API response
+    const facilityProperties = [
+      'wifi', 'parking', 'laundry', 'security_guard', 'mess_service',
+      'attached_bathroom', 'air_conditioning', 'heater', 'balcony'
+    ];
+    
+    facilityProperties.forEach(prop => {
+      if (hostel[prop] === true || hostel[prop] === 'true') {
+        count++;
+      }
+    });
+    
+    return count;
+  };
 
+  // Form steps components
+  const renderFormStep1 = () => (
+    <div className={`form-step ${currentStep === 1 ? 'active' : ''}`}>
+      <div className="form-section">
+        <h3>Basic Information</h3>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Hostel Name</label>
+            <input name="name" placeholder="Enter hostel name" value={formData.name} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Established Year</label>
+            <input type="number" name="established_year" placeholder="YYYY" value={formData.established_year} onChange={handleChange} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Description</label>
+          <textarea name="description" placeholder="Write a detailed description of your hostel" value={formData.description} onChange={handleChange} required />
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Contact Details</h3>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Phone Number</label>
+            <input name="contact_number" placeholder="Phone" value={formData.contact_number} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFormStep2 = () => (
+    <div className={`form-step ${currentStep === 2 ? 'active' : ''}`}>
+      <div className="form-section">
+        <h3>Location</h3>
+        <div className="form-group">
+          <label>Address</label>
+          <input name="address" placeholder="Address" value={formData.address} onChange={handleChange} required />
+        </div>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>City</label>
+            <input name="city" placeholder="City" value={formData.city} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>State</label>
+            <input name="state" placeholder="State" value={formData.state} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>ZIP Code</label>
+            <input name="zip" placeholder="ZIP Code" value={formData.zip} onChange={handleChange} required />
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Google Maps Link</label>
+          <input name="googleMapsLink" placeholder="Google Maps Link" value={formData.googleMapsLink} onChange={handleChange} />
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Nearby Places</h3>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Nearby Colleges</label>
+            <input name="nearby_colleges" placeholder="Enter nearby college names" value={formData.nearby_colleges} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Nearby Markets</label>
+            <input name="nearby_markets" placeholder="Enter nearby market names" value={formData.nearby_markets} onChange={handleChange} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFormStep3 = () => (
+    <div className={`form-step ${currentStep === 3 ? 'active' : ''}`}>
+      <div className="form-section">
+        <h3>Pricing</h3>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Minimum Rent (₹)</label>
+            <input type="number" name="pricing.minRent" placeholder="0" value={formData.pricing.minRent} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Maximum Rent (₹)</label>
+            <input type="number" name="pricing.maxRent" placeholder="0" value={formData.pricing.maxRent} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Security Deposit (₹)</label>
+            <input type="number" name="pricing.securityDeposit" placeholder="0" value={formData.pricing.securityDeposit} onChange={handleChange} />
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Cancellation Policy</h3>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Full Refund Days</label>
+            <input 
+              name="cancellation_policy.full_refund_days" 
+              placeholder="Full Refund Days"
+              value={formData.cancellation_policy.full_refund_days}
+              onChange={handleChange} 
+            />
+          </div>
+          <div className="form-group">
+            <label>Partial Refund Days</label>
+            <input 
+              name="cancellation_policy.partial_refund_days" 
+              placeholder="Partial Refund Days"
+              value={formData.cancellation_policy.partial_refund_days}
+              onChange={handleChange} 
+            />
+          </div>
+          <div className="form-group">
+            <label>Partial Refund Percentage</label>
+            <input 
+              name="cancellation_policy.partial_refund_percentage" 
+              placeholder="Partial Refund %"
+              value={formData.cancellation_policy.partial_refund_percentage}
+              onChange={handleChange} 
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFormStep4 = () => (
+    <div className={`form-step ${currentStep === 4 ? 'active' : ''}`}>
+      <div className="form-section">
+        <h3>Facilities</h3>
+        <div className="checkbox-grid">
+          {Object.keys(formData.facilities).map((key) => (
+            <label key={key} className="checkbox-label">
+              <input 
+                type="checkbox" 
+                name={`facilities.${key}`} 
+                checked={formData.facilities[key]} 
+                onChange={handleChange} 
+              />
+              <span className="checkbox-text">
+                {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Room Features</h3>
+        <div className="checkbox-grid">
+          {Object.keys(formData.room_features).map((key) => (
+            <label key={key} className="checkbox-label">
+              <input 
+                type="checkbox" 
+                name={`room_features.${key}`} 
+                checked={formData.room_features[key]} 
+                onChange={handleChange} 
+              />
+              <span className="checkbox-text">
+                {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Rules</h3>
+        <div className="checkbox-grid">
+          {Object.keys(formData.rules).map((key) => (
+            <label key={key} className="checkbox-label">
+              <input 
+                type="checkbox" 
+                name={`rules.${key}`} 
+                checked={formData.rules[key]} 
+                onChange={handleChange} 
+              />
+              <span className="checkbox-text">
+                {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Upload Images</h3>
+        <input type="file" multiple accept="image/*" onChange={handleImageUpload} />
+
+        {previewImages.length > 0 && (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="images" direction="horizontal">
+              {(provided) => (
+                <div
+                  className="image-preview-row"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {previewImages.map((src, index) => (
+                    <Draggable key={index} draggableId={`img-${index}`} index={index}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            userSelect: 'none',
+                            ...provided.draggableProps.style,
+                          }}
+                        >
+                          <img
+                            src={src}
+                            alt={`Preview ${index}`}
+                            className="preview-thumbnail"
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="manage-hostels-container">
-      
-    {/* ✅ Navigation Bar (Copied from ManageRooms.js) */}
-    <nav className="dashboard-nav">
-      <h1>Hostel Owner Dashboard</h1>
-      <ul>
-        <li><Link to="/dashboard">Dashboard</Link></li>
-        <li><Link to="/manage-hostels">Manage Hostels</Link></li>
-        <li><Link to="/manage-rooms">Manage Rooms</Link></li>
-        <li><Link to="/bookings">Bookings</Link></li>
-        <li><Link to="/students">Students</Link></li>
-        <li><Link to="/feedback">Feedback</Link></li>
-        <li><button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>Logout</button></li>
-      </ul>
-    </nav>
-   
-    <div className="manage-hostels-container">
-      <h1>Manage Hostels</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name:</label>
-          <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+    <div className="dashboard-layout">
+      <Sidebar />
+      <ToastContainer position="top-right" />
+      <div className="dashboard-main">
+        <div className="dashboard-header">
+          <h1>Manage Hostels</h1>
+          <button className="add-btn" onClick={() => setShowModal(true)}>➕ Add Hostel</button>
         </div>
-        <div>
-          <label>Address:</label>
-          <input type="text" name="address" value={formData.address} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Description:</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Phone:</label>
-          <input type="text" name="phone" value={formData.phone} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Email:</label>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>City:</label>
-          <input type="text" name="city" value={formData.city} onChange={handleChange} />
-        </div>
-        <div>
-          <label>State:</label>
-          <input type="text" name="state" value={formData.state} onChange={handleChange} />
-        </div>
-        <div>
-          <label>Zip Code:</label>
-          <input type="text" name="zip" value={formData.zip} onChange={handleChange} />
-        </div>
-        <div>
-          <label>Google Maps Link:</label>
-          <input type="url" name="googleMapsLink" value={formData.googleMapsLink} onChange={handleChange} />
-        </div>
-        <div>
-        <label>Established Year:</label>
-        <input type="text" name="established_year" value={formData.established_year} onChange={handleChange} />
 
-        <label>Nearby Colleges:</label>
-        <input type="text" name="nearby_colleges" value={formData.nearby_colleges} onChange={handleChange} />
+        {isLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading hostels...</p>
+          </div>
+        ) : hostels.length === 0 ? (
+          <div className="empty-state">
+            <img src="/empty-state.svg" alt="No hostels" className="empty-state-image" />
+            <h2>No Hostels Found</h2>
+            <p>You haven't added any hostels yet. Click the 'Add New Hostel' button to get started.</p>
+          </div>
+        ) : (
+          <div className="hostels-grid">
+            {hostels.map((hostel, index) => (
+              <motion.div 
+                key={hostel.id} 
+                className="hostel-card"
+                style={{"--index": index}}
+                whileHover={{ y: -10, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
+              >
+                {hostel.isNew && <span className="new-badge">New</span>}
+                <img
+                  src={hostel.images?.[0]?.image || '/placeholder.png'}
+                  alt={hostel.name}
+                  className="hostel-image"
+                  onError={(e) => { e.target.src = "/placeholder.png"; }}
+                />
+                <h3>{hostel.name}</h3>
+                <p><span>📍 Location:</span> {hostel.address || "N/A"}</p>
+                <p><span>🏠 Owned by:</span> {hostel.owner || "You"}</p>
+                <div className="hostel-stats">
+                  <div className="stat">
+                    <span className="stat-value">₹{hostel.rent_min !== undefined ? hostel.rent_min : 'N/A'}</span>
+                    <span className="stat-label">Min Rent</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-value">{getFacilitiesCount(hostel)}</span>
+                    <span className="stat-label">Facilities</span>
+                  </div>
+                </div>
+                <div className="hostel-card-actions">
+                  <button onClick={() => navigate(`/manage-hostels/${hostel.id}`)}>✏️ Edit</button>
+                  <button onClick={() => handleDelete(hostel.id)}>🗑 Delete</button>
+                  <button onClick={() => navigate(`/manage-rooms/${hostel.id}`)}> Add Floors & Rooms </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
-        <label>Nearby Markets:</label>
-        <input type="text" name="nearby_markets" value={formData.nearby_markets} onChange={handleChange} />
-        </div>
-        <div>
-          <h3>Facilities</h3>
-          <label>
-            <input type="checkbox" name="facilities.wifi" checked={formData.facilities.wifi} onChange={handleChange} />
-            WiFi
-          </label>
-          <label>
-            <input type="checkbox" name="facilities.parking" checked={formData.facilities.parking} onChange={handleChange} />
-            Parking
-          </label>
-          <label>
-            <input type="checkbox" name="facilities.laundry" checked={formData.facilities.laundry} onChange={handleChange} />
-            Laundry
-          </label>
-          <label>
-            <input type="checkbox" name="facilities.security" checked={formData.facilities.security} onChange={handleChange} />
-            Security Guard
-          </label>
-          <label>
-            <input type="checkbox" name="facilities.mess" checked={formData.facilities.mess} onChange={handleChange} />
-            Mess Service
-          </label>
-          
-        </div>
-        <div>
-          <h3>Pricing Details</h3>
-          <label>Min Rent:</label>
-          <input type="number" name="pricing.minRent" value={formData.pricing.minRent} onChange={handleChange} />
-          <label>Max Rent:</label>
-          <input type="number" name="pricing.maxRent" value={formData.pricing.maxRent} onChange={handleChange} />
-          <label>Security Deposit:</label>
-          <input type="number" name="pricing.securityDeposit" value={formData.pricing.securityDeposit} onChange={handleChange} />
-        </div>
-        <div>
-          <h3>Rules</h3>
-          <label>
-            <input type="checkbox" name="rules.smoking" checked={formData.rules.smoking} onChange={handleChange} />
-            Smoking Allowed
-          </label>
-          <label>
-            <input type="checkbox" name="rules.alcohol" checked={formData.rules.alcohol} onChange={handleChange} />
-            Alcohol Allowed
-          </label>
-          <label>
-            <input type="checkbox" name="rules.pets" checked={formData.rules.pets} onChange={handleChange} />
-            Pets Allowed
-          </label>
-          <label>
-            <input type="checkbox" name="rules.visitingHours" checked={formData.rules.visitingHours} onChange={handleChange} />
-            Visiting Hours Restricted
-          </label>
-        </div>
-        <div>
-    <label>Upload Images (max 10):</label>
-    <input type="file" multiple onChange={handleImageUpload} accept="image/*" />
-</div>
+        {showModal && (
+          <div className="modal">
+            <motion.form onSubmit={handleSubmit}
+              className="modal-form"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2>Add New Hostel</h2>
+              
+              {/* Stepper */}
+              <div className="stepper">
+                <div className={`step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
+                  <div className="step-number">{currentStep > 1 ? '✓' : '1'}</div>
+                  <div className="step-label">Basic Info</div>
+                </div>
+                <div className={`step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
+                  <div className="step-number">{currentStep > 2 ? '✓' : '2'}</div>
+                  <div className="step-label">Location</div>
+                </div>
+                <div className={`step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`}>
+                  <div className="step-number">{currentStep > 3 ? '✓' : '3'}</div>
+                  <div className="step-label">Pricing</div>
+                </div>
+                <div className={`step ${currentStep >= 4 ? 'active' : ''}`}>
+                  <div className="step-number">4</div>
+                  <div className="step-label">Amenities & Images</div>
+                </div>
+              </div>
 
-        <button type="submit">Add Hostel</button>
-      </form>
-      <hr />
-      <h3>Hostel List</h3>
-    
-<table className="hostel-table">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Address</th>
-      <th>Description</th>
-      <th>Owner</th>
-      <th>Contact</th>
-      <th>Email</th>
-      <th>City</th>
-      <th>State</th>
-      <th>Zip Code</th>
-      <th>Google Maps</th>
-      <th>Rent Range</th>
-      <th>Security Deposit</th>
-      <th>Facilities</th>
-      <th>Rules</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {hostels.map(hostel => (
-      <tr key={hostel.id}>
-        <td>{hostel.name || '-'}</td>
-        <td>{hostel.address || '-'}</td>
-        <td>{hostel.description || '-'}</td>
-        <td>{hostel.owner || '-'}</td>
-        <td>{hostel.contact_number ? hostel.contact_number : '-'}</td>
-        <td>{hostel.email || '-'}</td>
-        <td>{hostel.city || '-'}</td>
-        <td>{hostel.state || '-'}</td>
-        <td>{hostel.zip_code || '-'}</td>
-        <td>
-          {hostel.google_maps_link ? (
-            <a href={hostel.google_maps_link} target="_blank" rel="noopener noreferrer">
-              View Map
-            </a>
-          ) : '-'}
-        </td>
-        <td>
-          {hostel.rent_min && hostel.rent_max ? `${hostel.rent_min} - ${hostel.rent_max}` : '-'}
-        </td>
-        <td>{hostel.security_deposit || '-'}</td>
-        <td>
-          {hostel.wifi && 'WiFi, '}
-          {hostel.parking && 'Parking, '}
-          {hostel.laundry && 'Laundry, '}
-          {hostel.security_guard && 'Security Guard, '}
-          {hostel.mess_service && 'Mess Service, '}
-          {hostel.attached_bathroom && 'Attached Bathroom, '}
-          {hostel.air_conditioning && 'AC, '}
-          {hostel.heater && 'Heater, '}
-          {hostel.balcony && 'Balcony'}
-          {!(hostel.wifi || hostel.parking || hostel.laundry || hostel.security_guard || hostel.mess_service || hostel.attached_bathroom || hostel.air_conditioning || hostel.heater || hostel.balcony) ? '-' : ''}
-        </td>
-        <td>
-          {hostel.smoking_allowed && 'Smoking Allowed, '}
-          {hostel.alcohol_allowed && 'Alcohol Allowed, '}
-          {hostel.pets_allowed && 'Pets Allowed, '}
-          {hostel.visiting_hours ? `Visiting Hours: ${hostel.visiting_hours}` : ''}
-          {!(hostel.smoking_allowed || hostel.alcohol_allowed || hostel.pets_allowed || hostel.visiting_hours) ? '-' : ''}
-        </td>
-        <td>
-          <button className="edit-btn">Edit</button>
-          <button className="delete-btn">Delete</button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+              {/* Form Steps */}
+              {renderFormStep1()}
+              {renderFormStep2()}
+              {renderFormStep3()}
+              {renderFormStep4()}
 
+              {/* Navigation Buttons */}
+              <div className="stepper-navigation">
+                {currentStep > 1 && (
+                  <button type="button" className="prev-btn" onClick={prevStep}>
+                    Previous
+                  </button>
+                )}
+                
+                {currentStep < 4 ? (
+                  <button 
+                    type="button" 
+                    className="next-btn" 
+                    onClick={nextStep}
+                    disabled={!formValidation[`step${currentStep}`]}
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button 
+                    type="submit" 
+                    className="submit-btn"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Submitting...' : 'Submit Hostel'}
+                  </button>
+                )}
+              </div>
 
+              <div className="modal-buttons">
+                <button type="button" onClick={() => { setShowModal(false); resetForm(); }}>
+                  Cancel
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </div>
     </div>
-    </div>
-    
-    
   );
 };
 
