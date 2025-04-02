@@ -37,10 +37,11 @@ INSTALLED_APPS = [
     'student',
     'django_extensions',
     'channels',
+    'admin_panel',
     
     
 ]
-
+APPEND_SLASH = True
 from decouple import config
 # settings.py
 

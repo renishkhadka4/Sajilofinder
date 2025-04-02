@@ -9,6 +9,7 @@ urlpatterns = [
     path('hostel_owner/', include('hostel_owner.urls')),
     path('api/hostel_owner/', include('hostel_owner.urls')),
     path('api/students/', include('student.urls')),
+    path('api/admin/', include('admin_panel.urls')),
 
 ]
 if settings.DEBUG:

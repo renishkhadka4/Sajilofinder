@@ -34,6 +34,14 @@ class Hostel(models.Model):
     nearby_markets = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     cancellation_policy = models.JSONField(default=dict)
+    CATEGORY_CHOICES = [
+        ('boys', 'Boys Hostel'),
+        ('girls', 'Girls Hostel'),
+        ('mixed', 'Mixed/Co-ed'),
+    ]
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='mixed')
+    is_verified = models.BooleanField(default=False)  # ✅ Add this
+
     
     def __str__(self):
         return self.name
@@ -96,17 +104,19 @@ class Booking(models.Model):
 
 # hostel_owner/models.py
 
-# models.py
 class Feedback(models.Model):
     student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="student_feedbacks")
     hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE, related_name="feedbacks")
-    rating = models.IntegerField()
+    rating = models.IntegerField(null=True, blank=True)  # <-- changed
     comment = models.TextField()
     parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     reply = models.TextField(blank=True, null=True)
+    is_fake = models.BooleanField(default=False) 
+
     def __str__(self):
         return f"Feedback by {self.student.username} on {self.hostel.name}"
+
 
 
 

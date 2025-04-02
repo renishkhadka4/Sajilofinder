@@ -314,7 +314,9 @@ class StudentProfileView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return StudentProfile.objects.get(user=self.request.user)
+        profile, created = StudentProfile.objects.get_or_create(user=self.request.user)
+        return profile
+
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -327,29 +329,74 @@ from .serializers import FeedbackSerializer
 @permission_classes([IsAuthenticated])
 def submit_feedback(request):
     """
-     Allows students to submit feedback **only if their booking is confirmed**.
+    Allows students to submit feedback or reply if booking is confirmed.
     """
     student = request.user
     hostel_id = request.data.get("hostel_id")
     rating = request.data.get("rating")
     comment = request.data.get("comment")
+    parent_id = request.data.get("parent")  # New
 
-    #  Ensure required fields are provided
-    if not hostel_id or not rating or not comment:
-        return Response({'error': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not comment:
+        return Response({'error': 'Comment is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    
-    
-    #  Create Feedback Entry
-    feedback = Feedback.objects.create(
-        student=student, 
-        hostel_id=hostel_id, 
-        rating=rating, 
+    # For replies, ensure parent exists and belongs to the same hostel
+    if parent_id:
+        try:
+            parent = Feedback.objects.get(id=parent_id)
+        except Feedback.DoesNotExist:
+            return Response({'error': 'Parent feedback not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create a reply without rating
+        Feedback.objects.create(
+            student=student,
+            hostel=parent.hostel,
+            comment=comment,
+            parent=parent
+        )
+        return Response({'message': 'Reply submitted successfully!'}, status=status.HTTP_201_CREATED)
+
+    # For new top-level feedback
+    if not hostel_id or not rating:
+        return Response({'error': 'Hostel and rating are required for new feedback'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check confirmed booking exists for this hostel
+    has_booking = Booking.objects.filter(
+        student=student,
+        room__floor__hostel_id=hostel_id,
+        status='confirmed'
+    ).exists()
+
+    if not has_booking:
+        return Response({'error': 'You can only submit feedback for hostels you have stayed at.'}, status=status.HTTP_403_FORBIDDEN)
+
+    Feedback.objects.create(
+        student=student,
+        hostel_id=hostel_id,
+        rating=rating,
         comment=comment
     )
 
-    return Response({'message': 'Feedback submitted successfully!'}, status=status.HTTP_201_CREATED)
+    
 
+    return Response({'message': 'Feedback submitted successfully!'}, status=status.HTTP_201_CREATED)
+from django.shortcuts import get_object_or_404
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_feedback(request, pk):
+    feedback = get_object_or_404(Feedback, id=pk, student=request.user)
+    feedback.comment = request.data.get('comment', feedback.comment)
+    feedback.rating = request.data.get('rating', feedback.rating) if not feedback.parent else feedback.rating
+    feedback.save()
+    return Response({'message': 'Feedback updated!'})
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_feedback(request, pk):
+    feedback = get_object_or_404(Feedback, id=pk, student=request.user)
+    feedback.delete()
+    return Response({'message': 'Feedback deleted!'})
 
 
 from rest_framework.decorators import api_view, permission_classes
@@ -385,3 +432,22 @@ def mark_all_notifications_read(request):
     notifications = Notification.objects.filter(user=request.user, is_read=False)
     notifications.update(is_read=True)
     return Response({"message": "All notifications marked as read!"})
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_current_user(request):
+    user = request.user
+    return Response({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role
+    })

@@ -22,7 +22,16 @@ import RoomDetail from "./pages/RoomDetail";
 import KhaltiVerify from "./pages/KhaltiVerfiy";
 import MyBookings from "./pages/MyBookings"; 
 import StudentBookingDetail from './pages/StudentBookingDetail';
+import StudentProfileSettings from "./pages/StudentProfileSettings";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
+// Inside your App component
+<Routes>
+  {/* existing routes */}
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password/:token" element={<ResetPassword />} />
+</Routes>
 
 // Protect routes based on user roles
 const ProtectedRoute = ({ role, children }) => {
@@ -55,6 +64,9 @@ function App() {
         <Route path="/khalti/verify" element={<KhaltiVerify />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/student/bookings/:id" element={<StudentBookingDetail />} />
+        <Route path="/student/profile-settings" element={<StudentProfileSettings />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
 
         <Route

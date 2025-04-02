@@ -97,8 +97,10 @@ const ManageHostels = () => {
                  formData.pricing.maxRent.toString().trim() !== '';
         break;
       case 4:
-        isValid = true; // Facilities and rules are optional
-        break;
+          const hasImage = formData.images.length > 0;
+          isValid = hasImage; // Only image is required
+          break;
+        
       default:
         isValid = false;
     }
@@ -262,6 +264,8 @@ const ManageHostels = () => {
         maxRent: '',
         securityDeposit: '',
       },
+      category: '',
+
       rules: {
         smoking_allowed: false,
         alcohol_allowed: false,
@@ -309,6 +313,8 @@ const ManageHostels = () => {
       data.append('google_maps_link', formData.googleMapsLink);
       data.append('nearby_colleges', formData.nearby_colleges);
       data.append('nearby_markets', formData.nearby_markets);
+      data.append('category', formData.category);
+
 
       // Facilities, Features, Rules
       Object.entries(formData.facilities).forEach(([k, v]) => data.append(k, boolToStr(v)));
@@ -388,6 +394,16 @@ const ManageHostels = () => {
           <textarea name="description" placeholder="Write a detailed description of your hostel" value={formData.description} onChange={handleChange} required />
         </div>
       </div>
+      <div className="form-group">
+  <label>Hostel Category</label>
+  <select name="category" value={formData.category || ''} onChange={handleChange} required>
+    <option value="">Select Category</option>
+    <option value="boys">Boys Hostel</option>
+    <option value="girls">Girls Hostel</option>
+    <option value="mixed">Mixed Hostel</option>
+  </select>
+</div>
+
 
       <div className="form-section">
         <h3>Contact Details</h3>
@@ -724,7 +740,8 @@ const ManageHostels = () => {
                   <button 
                     type="submit" 
                     className="submit-btn"
-                    disabled={isLoading}
+                    disabled={isLoading || !formValidation.step4}
+
                   >
                     {isLoading ? 'Submitting...' : 'Submit Hostel'}
                   </button>

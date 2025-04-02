@@ -4,6 +4,7 @@ import api from "../api/axios";
 import "../styles/HostelDetail.css";
 import Navbar from "../components/Navbar";
 
+
 const HostelDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,15 +16,74 @@ const HostelDetail = () => {
   const [feedbackList, setFeedbackList] = useState([]);
   const [newFeedback, setNewFeedback] = useState({ rating: "", comment: "" });
   const [canGiveFeedback, setCanGiveFeedback] = useState(true);
+  const [replyInputs, setReplyInputs] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
+  const [editMode, setEditMode] = useState(null);
+  const [editReplyMode, setEditReplyMode] = useState(null);
+  const [editInputs, setEditInputs] = useState({});
   
   useEffect(() => {
-    fetchHostel();
-    fetchFloors();
-    fetchRecentHostels();
-    fetchStudentBookings();
-    fetchFeedbacks();
-    checkFeedbackPermission();  
+    const fetchAll = async () => {
+      try {
+        fetchHostel();
+        fetchFloors();
+        fetchRecentHostels();
+        fetchStudentBookings();
+        fetchFeedbacks();
+  
+        const token = localStorage.getItem("token");
+  
+        const userRes = await api.get("/students/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCurrentUser(userRes.data);
+  
+        // ✅ Allow everyone to give feedback
+        setCanGiveFeedback(true);
+  
+        // If you still want to fetch booking history, but not use it for feedback:
+        await api.get("/students/bookings/my-history/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+      } catch (err) {
+        console.error("Something went wrong:", err);
+      }
+    };
+  
+    fetchAll();
   }, [id]);
+  
+  
+  
+  const handleUpdateFeedback = async (id, newComment, newRating = null) => {
+    const token = localStorage.getItem("token");
+    try {
+      await api.put(`/students/feedback/${id}/update/`, {
+        comment: newComment,
+        ...(newRating !== null && { rating: newRating })
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchFeedbacks();
+      setEditMode(null);
+      setEditReplyMode(null);
+    } catch (err) {
+      alert("Update failed.");
+    }
+  };
+  
+  const handleDeleteFeedback = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      await api.delete(`/students/feedback/${id}/delete/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchFeedbacks();
+    } catch (err) {
+      alert("Delete failed.");
+    }
+  };
   
   const fetchFeedbacks = async () => {
     try {
@@ -33,6 +93,30 @@ const HostelDetail = () => {
       console.error("Error fetching feedback:", err);
     }
   };
+  
+  
+  const handleSubmitReply = async (parentId) => {
+    const token = localStorage.getItem("token");
+    const comment = replyInputs[parentId]?.trim();
+    if (!comment) return alert("Reply cannot be empty");
+  
+    try {
+      await api.post("/students/feedback/", {
+        hostel_id: hostel.id,
+        comment,
+        parent: parentId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      setReplyInputs((prev) => ({ ...prev, [parentId]: "" }));
+      fetchFeedbacks(); // Refresh the list
+    } catch (err) {
+      console.error("Reply failed:", err);
+      alert("Reply failed");
+    }
+  };
+  
 
   const checkFeedbackPermission = async () => {
     try {
@@ -122,21 +206,22 @@ const HostelDetail = () => {
     const token = localStorage.getItem("token");
     try {
       await api.post("/students/feedback/", {
-        hostel_id: hostel.id,
+        hostel_id: hostel.id,  // Ensure that hostel_id is included
         rating: newFeedback.rating,
         comment: newFeedback.comment.trim(),
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
   
-      alert(" Feedback submitted!");
+      alert("Feedback submitted!");
       setNewFeedback({ rating: "", comment: "" });
-      fetchFeedbacks();
+      fetchFeedbacks();  // Refresh feedback after submission
     } catch (err) {
       console.error("Feedback submission error:", err);
-      alert(" You may not have permission or something went wrong.");
+      alert("You may not have permission or something went wrong.");
     }
   };
+  
   
   
 
@@ -156,6 +241,32 @@ const HostelDetail = () => {
     return "Available";
   };
   
+  document.addEventListener('DOMContentLoaded', function() {
+    const roomCards = document.querySelectorAll('.room-card');
+    
+    roomCards.forEach(card => {
+      const statusElement = card.querySelector('p:nth-of-type(3)');
+      if (!statusElement) return;
+      
+      const status = statusElement.textContent.trim();
+      
+      if (status === 'Available') {
+        statusElement.style.backgroundColor = '#e8f5e9';
+        statusElement.style.color = '#2e7d32';
+      } else if (status === 'Booked') {
+        statusElement.style.backgroundColor = '#ffebee';
+        statusElement.style.color = '#c62828';
+      } else if (status === 'Pending') {
+        statusElement.style.backgroundColor = '#fff8e1';
+        statusElement.style.color = '#f57f17';
+      } else if (status === 'Rejected') {
+        statusElement.style.backgroundColor = '#f5f5f5';
+        statusElement.style.color = '#616161';
+      }
+    });
+  });
+
+
 
   const amenities = [
     { key: "wifi", label: "WiFi" },
@@ -300,23 +411,83 @@ const HostelDetail = () => {
     </div>
   )}
 
-  {feedbackList.length > 0 ? (
-    feedbackList.map((fb) => (
-      <div key={fb.id} className="feedback-card">
-        <p><strong>{fb.student.username}</strong> ({fb.rating}⭐)</p>
+{feedbackList.length > 0 ? (
+  feedbackList.map((fb) => (
+    <div key={fb.id} className="feedback-card">
+      <p><strong>{fb.student.username}</strong> ({fb.rating}⭐)</p>
+      
+      {/* Feedback Comment or Edit Mode */}
+      {editMode === fb.id ? (
+        <>
+          <textarea
+            value={editInputs[fb.id] || fb.comment}
+            onChange={(e) => setEditInputs({ ...editInputs, [fb.id]: e.target.value })}
+          />
+          <button onClick={() => handleUpdateFeedback(fb.id, editInputs[fb.id], fb.rating)}>Update</button>
+          <button onClick={() => setEditMode(null)}>Cancel</button>
+        </>
+      ) : (
         <p>{fb.comment}</p>
-        {fb.replies &&
-          fb.replies.map((r) => (
-            <div key={r.id} className="reply-comment">
-              <p><strong>↪ {r.student.username}</strong>: {r.comment}</p>
-            </div>
-          ))}
-      </div>
-    ))
-  ) : (
-    <p>No feedback yet.</p>
-  )}
+      )}
+
+      {/* Edit/Delete Buttons for Feedback */}
+      {currentUser?.id === fb.student.id && editMode !== fb.id && (
+        <div className="feedback-actions">
+          <button onClick={() => setEditMode(fb.id)}>Edit</button>
+          <button onClick={() => handleDeleteFeedback(fb.id)}>Delete</button>
+        </div>
+      )}
+
+      {/* Replies */}
+      {fb.replies && fb.replies.map((r) => (
+        <div key={r.id} className="reply-comment">
+          <p><strong>↪ {r.student.username}</strong>:</p>
+
+          {editReplyMode === r.id ? (
+            <>
+              <textarea
+                value={editInputs[r.id] || r.comment}
+                onChange={(e) => setEditInputs({ ...editInputs, [r.id]: e.target.value })}
+              />
+              <button onClick={() => handleUpdateFeedback(r.id, editInputs[r.id])}>Update</button>
+              <button onClick={() => setEditReplyMode(null)}>Cancel</button>
+            </>
+          ) : (
+            <p>{r.comment}</p>
+          )}
+
+{currentUser?.id === r.student.id && (
+  <div className="reply-actions">
+    <button onClick={() => setEditReplyMode(r.id)}>Edit</button>
+    <button onClick={() => handleDeleteFeedback(r.id)}>Delete</button>
+  </div>
+)}
+
+        </div>
+      ))}
+
+      {/* Reply Box */}
+      {canGiveFeedback && (
+        <div className="reply-box">
+          <textarea
+            rows="2"
+            placeholder="Write a reply..."
+            value={replyInputs[fb.id] || ""}
+            onChange={(e) =>
+              setReplyInputs({ ...replyInputs, [fb.id]: e.target.value })
+            }
+          />
+          <button onClick={() => handleSubmitReply(fb.id)}>Reply</button>
+        </div>
+      )}
+    </div>
+  ))
+) : (
+  <p>No feedback yet.</p>
+)}
+
 </div>
+
 
         <div className="recent-hostels">
           <h2>Recent Hostels</h2>

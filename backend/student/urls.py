@@ -10,7 +10,8 @@ from .views import (
     submit_feedback,get_student_notifications
 )
 from .views import mark_all_notifications_read
-
+from .views import update_feedback, delete_feedback
+from .views import get_current_user
 router = DefaultRouter()
 router.register(r'bookings', BookingViewSet)
 
@@ -23,6 +24,9 @@ urlpatterns = [
     path("feedback/", submit_feedback, name="submit-feedback"),
     path('notifications/', get_student_notifications, name='student-notifications'),
     path("notifications/mark_all_read/", mark_all_notifications_read, name="mark-all-notifications-read"),
+    path("feedback/<int:pk>/update/", update_feedback, name="update-feedback"),
+    path("feedback/<int:pk>/delete/", delete_feedback, name="delete-feedback"),
+    path("me/", get_current_user, name="get-current-user"),
 
     path('', include(router.urls)),  
 ]

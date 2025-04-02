@@ -98,3 +98,63 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user  # ✅ Returns the authenticated user
+    
+
+    from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.utils import timezone
+from django.conf import settings
+from .models import CustomUser
+
+# In-memory store for simplicity (you can use model or cache in prod)
+RESET_TOKENS = {}
+
+@api_view(['POST'])
+def send_reset_email(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+
+    try:
+        user = CustomUser.objects.get(email=email)
+        token = get_random_string(30)
+        RESET_TOKENS[token] = {"user_id": user.id, "expires_at": timezone.now() + timezone.timedelta(minutes=15)}
+
+        reset_link = f"http://localhost:3000/reset-password/{token}/"  # 🔁 Adjust frontend URL
+        send_mail(
+            "Reset Your Password",
+            f"Click the link to reset your password:\n\n{reset_link}\n\nThis link expires in 15 minutes.",
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False
+        )
+        return Response({"message": "Reset email sent!"})
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User with this email does not exist"}, status=404)
+
+@api_view(['POST'])
+def reset_password(request):
+    token = request.data.get("token")
+    new_password = request.data.get("new_password")
+
+    if not token or not new_password:
+        return Response({"error": "Token and new password are required"}, status=400)
+
+    token_data = RESET_TOKENS.get(token)
+    if not token_data or timezone.now() > token_data["expires_at"]:
+        return Response({"error": "Invalid or expired token"}, status=400)
+
+    try:
+        user = CustomUser.objects.get(id=token_data["user_id"])
+        user.set_password(new_password)
+        user.save()
+
+        # Clean up used token
+        del RESET_TOKENS[token]
+
+        return Response({"message": "Password reset successful!"})
+    except CustomUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)

@@ -80,9 +80,18 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     def get_queryset(self):
         user = self.request.user
-        if user.role == "HostelOwner":
-            return Feedback.objects.filter(hostel__owner=user, parent__isnull=True)
-        return Feedback.objects.filter(student=user, parent__isnull=True)
+        hostel_id = self.request.query_params.get("hostel_id")
+
+        # Make sure hostel_id is present
+        if hostel_id:
+            if user.role == "HostelOwner":
+                return Feedback.objects.filter(hostel_id=hostel_id, parent__isnull=True)
+            else:
+                return Feedback.objects.filter(hostel_id=hostel_id, parent__isnull=True)
+        
+        # Default fallback: return nothing if hostel_id is not provided
+        return Feedback.objects.none()
+
 
     def create(self, request, *args, **kwargs):
         parent_id = request.data.get("parent")
