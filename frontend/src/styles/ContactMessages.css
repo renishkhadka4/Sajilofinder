@@ -1,0 +1,25 @@
+.admin-messages-container {
+    display: flex;
+  }
+  
+  .admin-messages-content {
+    flex: 1;
+    padding: 20px;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+  }
+  
+  table th, table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+  }
+  
+  table th {
+    background-color: #f5f5f5;
+  }
+  

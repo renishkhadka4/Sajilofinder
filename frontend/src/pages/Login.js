@@ -31,11 +31,14 @@ const Login = () => {
       console.log("Stored User:", localStorage.getItem("user")); //  Debugging localStorage
   
       //  Redirect based on role
-      if (role === "HostelOwner") {
+      if (role === "Admin") {
+        navigate("/admin/Dashboard");
+      } else if (role === "HostelOwner") {
         navigate("/dashboard");
       } else {
         navigate("/");
       }
+      
     } catch (err) {
       console.error("Login Error:", err.response?.data); //  Log error
       setError(err.response?.data?.detail || "Login failed");

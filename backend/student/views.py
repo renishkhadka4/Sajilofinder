@@ -109,6 +109,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.conf import settings
 import requests
+from hostel_owner.models import Payment
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -192,7 +193,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             logger.error(f" Error sending booking email to {recipient_email}: {str(e)}")
             print(f" Error sending booking email to {recipient_email}: {str(e)}")  #  Debugging Output
 
-    
+
+
     @action(detail=True, methods=['post'], url_path='initiate-payment')
     def initiate_payment(self, request, pk=None):
         booking = self.get_object()
@@ -200,13 +202,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         payload = {
             "return_url": "http://localhost:3000/khalti/verify/",
             "website_url": "http://localhost:3000/",
-            "amount": 1800 * 100,  # In paisa
+            "amount": 1800 * 100,
             "purchase_order_id": f"BOOKING-{booking.id}",
             "purchase_order_name": "Hostel Security Deposit",
             "customer_info": {
                 "name": request.user.username,
                 "email": request.user.email,
-                "phone": "9800000001"  #  Use test phone or ask during payment
+                "phone": "9800000001"
             }
         }
 
@@ -216,11 +218,20 @@ class BookingViewSet(viewsets.ModelViewSet):
         }
 
         response = requests.post("https://dev.khalti.com/api/v2/epayment/initiate/", json=payload, headers=headers)
-        
+
         if response.status_code == 200:
-            return Response(response.json(), status=200)
+            data = response.json()
+            
+            # ✅ Save pidx to booking
+            booking.pidx = data.get("pidx")
+            booking.save()
+
+            return Response(data, status=200)
         else:
             return Response(response.json(), status=400)
+
+
+
 
     @action(detail=False, methods=['post'], url_path='verify-payment')
     def verify_payment(self, request):
@@ -234,22 +245,45 @@ class BookingViewSet(viewsets.ModelViewSet):
             "Content-Type": "application/json"
         }
 
-        payload = {
-            "pidx": pidx
-        }
+        payload = {"pidx": pidx}
 
         response = requests.post("https://dev.khalti.com/api/v2/epayment/lookup/", json=payload, headers=headers)
 
         if response.status_code == 200:
             data = response.json()
+            print("🔍 Khalti Payment Lookup Response:", data)
 
             if data["status"] == "Completed":
-                # Confirm booking if needed
+                try:
+                    booking = Booking.objects.get(pidx=pidx)
+                except Booking.DoesNotExist:
+                    return Response({"error": "Booking not found for this pidx"}, status=400)
+
+                # ✅ Create Payment record if not exists
+                Payment.objects.get_or_create(
+                    booking=booking,
+                    defaults={
+                        "student": request.user,
+                        "amount": data["total_amount"] / 100,
+                        "transaction_id": data["transaction_id"],
+                        "status": "success",
+                        "payment_method": "Khalti"
+                    }
+                )
+
+                booking.status = "confirmed"
+                booking.save()
+
                 return Response({"message": "Payment verified!", "booking_status": "confirmed"})
+
             else:
                 return Response({"message": "Payment not completed", "status": data["status"]}, status=400)
         else:
             return Response(response.json(), status=400)
+
+
+
+
 
         
     

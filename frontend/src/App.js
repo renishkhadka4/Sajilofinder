@@ -25,6 +25,15 @@ import StudentBookingDetail from './pages/StudentBookingDetail';
 import StudentProfileSettings from "./pages/StudentProfileSettings";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import ManageUsers from './pages/Admin/ManageUsers';
+import AdminMessages from "./pages/Admin/AdminMessages";
+import AdminManageHostels from './pages/Admin/AdminHostel';
+import AdminFeedback from './pages/Admin/AdminFeedback';
+import AdminTransactions from "./pages/Admin/AdminTransactions";
+import AdminSettings from "./pages/Admin/AdminSettings";
+import AdminBlog from "./pages/Admin/AdminBlog";
+import AdminAboutUs from "./pages/Admin/AdminAboutUs";
 
 // Inside your App component
 <Routes>
@@ -67,6 +76,50 @@ function App() {
         <Route path="/student/profile-settings" element={<StudentProfileSettings />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/admin/blogs" element={<AdminBlog />} />
+        
+<Route path="/admin/about-us" element={<AdminAboutUs />} />
+        <Route
+  path="/admin/dashboard"
+  element={
+    <ProtectedRoute role="Admin">
+      <AdminDashboard />
+    </ProtectedRoute>
+  }
+/>
+<Route path="/admin/settings" element={<AdminSettings />} />
+<Route
+  path="/admin/transactions"
+  element={
+    <ProtectedRoute role="Admin">
+      <AdminTransactions />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/messages"
+  element={<ProtectedRoute role="Admin"><AdminMessages /></ProtectedRoute>}
+/>
+<Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute role="Admin">
+      <ManageUsers />
+    </ProtectedRoute>
+  }
+/>
+<Route path="/admin/hostels" element={<ProtectedRoute role="Admin"><AdminManageHostels /></ProtectedRoute>} />
+<Route
+  path="/admin/feedback"
+  element={
+    <ProtectedRoute role="Admin">
+      <AdminFeedback />
+    </ProtectedRoute>
+  }
+/>
+
+
+
 
 
         <Route

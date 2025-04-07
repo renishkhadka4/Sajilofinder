@@ -76,7 +76,6 @@ class ApproveHostelView(APIView):
     permission_classes = [IsCustomAdmin]
 
     def patch(self, request, pk):
-        from hostel_owner.models import Hostel
         try:
             hostel = Hostel.objects.get(pk=pk)
             hostel.is_verified = True
@@ -84,6 +83,7 @@ class ApproveHostelView(APIView):
             return Response({"message": "Hostel approved successfully."})
         except Hostel.DoesNotExist:
             return Response({"error": "Hostel not found."}, status=404)
+
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -96,11 +96,29 @@ from hostel_owner.models import Hostel
 def reject_hostel(request, hostel_id):
     try:
         hostel = Hostel.objects.get(id=hostel_id)
-        hostel.is_verified = False
-        hostel.save()
-        return Response({"message": "Hostel rejected successfully."}, status=status.HTTP_200_OK)
+
+        # optionally send email
+        from django.core.mail import send_mail
+        send_mail(
+            'Hostel Rejected',
+            f'Your hostel "{hostel.name}" has been rejected by admin.',
+            'noreply@sajilofinder.com',
+            [hostel.owner.email],
+            fail_silently=True
+        )
+
+        hostel.delete()  # or mark as rejected if you want to keep it
+        return Response({"message": "Hostel rejected successfully."})
     except Hostel.DoesNotExist:
-        return Response({"error": "Hostel not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Hostel not found."}, status=404)
+
+class PendingHostelsView(APIView):
+    permission_classes = [IsCustomAdmin]
+
+    def get(self, request):
+        pending_hostels = Hostel.objects.filter(is_verified=False)
+        serializer = HostelSerializer(pending_hostels, many=True)
+        return Response(serializer.data)
 
 
 # admin_panel/views.py
@@ -155,9 +173,17 @@ class BlogViewSet(viewsets.ModelViewSet):
     queryset = Blog.objects.all().order_by('-created_at')
     serializer_class = BlogSerializer
     permission_classes = [IsCustomAdmin]
+    def create(self, request, *args, **kwargs):
+        print("DEBUG Blog POST Payload:", request.data)
+        return super().create(request, *args, **kwargs)
 
 
-class ContactMessageListView(generics.ListAPIView):
+from rest_framework import viewsets
+from .models import ContactMessage
+from .serializers import ContactMessageSerializer
+from .permissions import IsCustomAdmin
+
+class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset = ContactMessage.objects.all().order_by('-created_at')
     serializer_class = ContactMessageSerializer
     permission_classes = [IsCustomAdmin]
@@ -206,6 +232,10 @@ class AdminDashboardStatsAPIView(APIView):
         total_bookings = Booking.objects.count()
         total_feedbacks = Feedback.objects.count()
 
+        print("DEBUG: User =", request.user)
+        print("DEBUG: Is Auth =", request.user.is_authenticated)
+        print("DEBUG: Role =", getattr(request.user, 'role', 'Not Found'))
+       
         return Response({
             "total_users": total_users,
             "total_students": total_students,
@@ -213,6 +243,42 @@ class AdminDashboardStatsAPIView(APIView):
             "total_bookings": total_bookings,
             "total_feedbacks": total_feedbacks,
         })
+    
+from rest_framework import viewsets
+from .models import AboutUs
+from .serializers import AboutUsSerializer
+from .permissions import IsCustomAdmin
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from .models import AboutUs
+from .serializers import AboutUsSerializer
+from .permissions import IsCustomAdmin
+
+class AboutUsView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def get(self, request):
+        about = AboutUs.objects.first()
+        if about:
+            return Response(AboutUsSerializer(about).data)
+        return Response({"detail": "About Us info not found"}, status=404)
+
+    def post(self, request):
+        about = AboutUs.objects.first()
+        data = request.data
+
+        if about:
+            serializer = AboutUsSerializer(about, data=data, partial=True)
+        else:
+            serializer = AboutUsSerializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 
 from rest_framework.views import APIView
@@ -234,3 +300,190 @@ class AdminProfileView(APIView):
             serializer.save()
             return Response({"message": "Profile updated successfully.", "user": serializer.data})
         return Response(serializer.errors, status=400)
+
+from hostel_owner.serializers import FeedbackSerializer
+
+
+class AdminAllFeedbacksAPIView(APIView):
+    permission_classes = [IsCustomAdmin]
+
+    def get(self, request):
+        feedbacks = Feedback.objects.select_related("student", "hostel").all().order_by("-created_at")
+        serializer = FeedbackSerializer(feedbacks, many=True)
+        return Response(serializer.data)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from hostel_owner.models import Feedback
+
+class AllFeedbacksView(APIView):
+    def get(self, request):
+        feedbacks = Feedback.objects.all().order_by('-created_at')
+        serializer = FeedbackSerializer(feedbacks, many=True)
+        return Response(serializer.data)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from hostel_owner.models import Payment
+
+from hostel_owner.serializers import PaymentSerializer  # we'll create this next
+from admin_panel.permissions import IsCustomAdmin  # if using custom permission
+
+class TransactionListView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def get(self, request):
+        payments = Payment.objects.select_related('student', 'booking').order_by('-created_at')
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+
+
+from hostel_owner.models import Payment
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from admin_panel.permissions import IsCustomAdmin  # your custom admin permission
+from hostel_owner.serializers import PaymentSerializer
+
+class AdminTransactionView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def get(self, request):
+        payments = Payment.objects.select_related("student", "booking__room__floor__hostel").all().order_by("-created_at")
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+
+
+
+# admin_panel/views.py
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from api.models import CustomUser
+from .serializers import AdminProfileSerializer
+from admin_panel.permissions import IsCustomAdmin
+
+class AdminProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def get(self, request):
+        user = request.user
+        serializer = AdminProfileSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        serializer = AdminProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated!"})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# admin_panel/views.py (continued)
+
+from django.core.mail import send_mail
+from django.conf import settings
+import random
+from django.core.cache import cache
+
+class RequestEmailChangeView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def post(self, request):
+        new_email = request.data.get("new_email")
+        if not new_email:
+            return Response({"error": "New email is required"}, status=400)
+
+        otp = random.randint(100000, 999999)
+        cache.set(f"admin_email_change_otp_{request.user.id}", (new_email, otp), timeout=300)  # expires in 5 mins
+
+        send_mail(
+            "Verify Your New Email",
+            f"Your OTP for changing email is: {otp}",
+            settings.EMAIL_HOST_USER,
+            [new_email],
+            fail_silently=False,
+        )
+        return Response({"message": f"OTP sent to {new_email}!"})
+
+
+class VerifyEmailChangeView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomAdmin]
+
+    def post(self, request):
+        otp = request.data.get("otp")
+        cached = cache.get(f"admin_email_change_otp_{request.user.id}")
+
+        if not cached:
+            return Response({"error": "OTP expired or not found"}, status=400)
+
+        new_email, stored_otp = cached
+
+        if str(otp) != str(stored_otp):
+            return Response({"error": "Invalid OTP"}, status=400)
+
+        request.user.email = new_email
+        request.user.save()
+
+        cache.delete(f"admin_email_change_otp_{request.user.id}")
+        return Response({"message": "Email updated successfully!"})
+
+
+
+# admin_panel/views.py
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from hostel_owner.models import Booking
+from django.utils.timezone import now, timedelta
+import calendar
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def booking_trend_data(request):
+    today = now().date()
+    week_days = [today - timedelta(days=i) for i in range(6, -1, -1)]  # Last 7 days
+
+    data = []
+    for day in week_days:
+        day_label = calendar.day_name[day.weekday()]
+        bookings = Booking.objects.filter(created_at__date=day).count()
+        inquiries = Booking.objects.filter(created_at__date=day, status='pending').count()
+
+        data.append({
+            "day": day_label,
+            "bookings": bookings,
+            "inquiries": inquiries
+        })
+
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsCustomAdmin])
+def user_distribution_data(request):
+    student_count = CustomUser.objects.filter(role="Student").count()
+    owner_count = CustomUser.objects.filter(role="HostelOwner").count()
+    
+    return Response([
+        {"name": "Students", "value": student_count},
+        {"name": "Hostel Owners", "value": owner_count}
+    ])
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def feedback_rating_data(request):
+    from hostel_owner.models import Feedback
+    from django.db.models import Count
+
+    feedback_data = Feedback.objects.values('rating').annotate(count=Count('id')).order_by('rating')
+    return Response(feedback_data)

@@ -107,3 +107,17 @@ class OwnerNotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = OwnerNotification
         fields = "__all__"
+
+
+from rest_framework import serializers
+from hostel_owner.models import Payment
+
+class PaymentSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.username", read_only=True)
+    student_email = serializers.EmailField(source="student.email", read_only=True)
+    hostel_name = serializers.CharField(source="booking.room.floor.hostel.name", read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = "__all__"
+

@@ -13,7 +13,8 @@ from .views import mark_all_notifications_read
 from .views import update_feedback, delete_feedback
 from .views import get_current_user
 router = DefaultRouter()
-router.register(r'bookings', BookingViewSet)
+
+router.register(r'bookings', BookingViewSet, basename='student-bookings')
 
 urlpatterns = [
     path("hostels/search/", HostelSearchView.as_view(), name="hostel-search"),

@@ -2,6 +2,7 @@ from django.urls import path
 from .views import RegisterView, VerifyOTPView, LoginView
 from .views import UserProfileUpdateView, ChangePasswordView,UserProfileView
 from .views import send_reset_email, reset_password
+
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),

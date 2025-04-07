@@ -158,3 +158,10 @@ def reset_password(request):
         return Response({"message": "Password reset successful!"})
     except CustomUser.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
+
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .token import CustomTokenObtainPairSerializer
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

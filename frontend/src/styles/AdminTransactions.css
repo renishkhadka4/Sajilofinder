@@ -1,0 +1,234 @@
+/* AdminTransactions.css */
+.admin-transactions-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f2f4f8;
+  }
+  
+  .admin-transactions-content {
+    flex: 1;
+    margin-left: 230px; /* Adjust based on your sidebar width */
+    padding: 24px;
+    min-height: 100vh;
+  }
+  
+  .admin-transactions-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .transactions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+  }
+  
+  .transactions-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 0;
+  }
+  
+  .search-container {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .search-input {
+    width: 280px;
+    padding: 10px 16px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  
+  .search-input:focus {
+    border-color: #4299e1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+  }
+  
+  .refresh-button {
+    padding: 10px 16px;
+    background-color: #e2e8f0;
+    color: #4a5568;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .refresh-button:hover {
+    background-color: #cbd5e0;
+  }
+  
+  .loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #718096;
+    font-weight: 500;
+  }
+  
+  .empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #718096;
+    font-weight: 500;
+    background-color: #f7fafc;
+    border-radius: 4px;
+  }
+  
+  .transactions-table-container {
+    overflow-x: auto;
+    margin-bottom: 24px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+  }
+  
+  .transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+  }
+  
+  .transactions-table thead {
+    background-color: #f7fafc;
+  }
+  
+  .transactions-table th {
+    padding: 14px 20px;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 2px solid #e2e8f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+  }
+  
+  .transactions-table th:hover {
+    background-color: #edf2f7;
+  }
+  
+  .sort-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    color: #4299e1;
+  }
+  
+  .transactions-table td {
+    padding: 12px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #2d3748;
+  }
+  
+  .transactions-table tbody tr:hover {
+    background-color: #f7fafc;
+  }
+  
+  .transaction-id {
+    font-family: monospace;
+    font-size: 13px;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .status-success {
+    background-color: #c6f6d5;
+    color: #22543d;
+  }
+  
+  .status-pending {
+    background-color: #feebc8;
+    color: #7b341e;
+  }
+  
+  .status-failed {
+    background-color: #fed7d7;
+    color: #822727;
+  }
+  
+  .status-default {
+    background-color: #e2e8f0;
+    color: #4a5568;
+  }
+  
+  .transactions-summary {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .transactions-summary p {
+    margin: 0;
+    font-weight: 500;
+    color: #4a5568;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .admin-transactions-content {
+      margin-left: 220px;
+      padding: 16px;
+    }
+    
+    .admin-transactions-inner {
+      padding: 20px;
+    }
+    
+    .transactions-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    
+    .search-container {
+      width: 100%;
+    }
+    
+    .search-input {
+      flex: 1;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .admin-transactions-content {
+      margin-left: 0;
+    }
+    
+    .search-container {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .search-input {
+      width: 100%;
+    }
+    
+    .transactions-summary {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }

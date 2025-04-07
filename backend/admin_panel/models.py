@@ -44,3 +44,23 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.name}"
+
+
+
+from django.db import models
+
+class AboutUs(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    services = models.TextField(help_text="Comma-separated list of services")
+    image1 = models.ImageField(upload_to="about_us/", null=True, blank=True)
+    image2 = models.ImageField(upload_to="about_us/", null=True, blank=True)
+    image3 = models.ImageField(upload_to="about_us/", null=True, blank=True)
+    image4 = models.ImageField(upload_to="about_us/", null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def service_list(self):
+        return [s.strip() for s in self.services.split(',') if s.strip()]
+
+    def __str__(self):
+        return self.title

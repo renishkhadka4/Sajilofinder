@@ -70,3 +70,31 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         model = ContactMessage
         fields = '__all__'
 
+
+# admin_panel/serializers.py
+
+from rest_framework import serializers
+from api.models import CustomUser
+
+class AdminProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ('first_name', 'last_name', 'email', 'profile_picture')
+        read_only_fields = ('email',)  # Email updated only after OTP verification
+
+
+from rest_framework import serializers
+from .models import AboutUs
+
+class AboutUsSerializer(serializers.ModelSerializer):
+    services_list = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AboutUs
+        fields = [
+            "id", "title", "description", "services", "services_list",
+            "image1", "image2", "image3", "image4", "updated_at"
+        ]
+
+    def get_services_list(self, obj):
+        return obj.service_list()

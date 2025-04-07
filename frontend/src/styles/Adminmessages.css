@@ -1,0 +1,181 @@
+/* Adminmessages.css */
+
+.admin-dashboard {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8fafc;
+  }
+  
+  .admin-content {
+    flex: 1;
+    padding: 2rem;
+    margin-left: 250px; /* Adjust based on sidebar width */
+  }
+  
+  .admin-messages-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .admin-messages-header h2 {
+    font-size: 1.8rem;
+    color: #1e293b;
+    margin: 0;
+  }
+  
+  .refresh-btn {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .refresh-btn:hover {
+    background-color: #e2e8f0;
+  }
+  
+  .table-container {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .messages-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  
+  .messages-table th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .messages-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+  
+  .messages-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .messages-table tr:hover {
+    background-color: #f8fafc;
+  }
+  
+  .sender-name {
+    font-weight: 600;
+  }
+  
+  .sender-email a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+  
+  .sender-email a:hover {
+    text-decoration: underline;
+  }
+  
+  .message-content {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .message-date {
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+  
+  .delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .delete-btn:hover {
+    background-color: #fecaca;
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+  }
+  
+  .loading-spinner {
+    border: 3px solid #e2e8f0;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .error-message {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .error-message button {
+    margin-top: 1rem;
+    background-color: #b91c1c;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+  }
+  
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #64748b;
+    text-align: center;
+  }
+  
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }

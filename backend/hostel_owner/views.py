@@ -296,14 +296,22 @@ class RoomViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
         floor_id = self.request.data.get('floor')
+
         if not floor_id:
             raise serializers.ValidationError({"floor": "This field is required."})
 
         floor = Floor.objects.get(id=floor_id)
+
+        # 🛑 Prevent creation if hostel is not verified
+        if not floor.hostel.is_verified:
+            raise serializers.ValidationError({"error": "Hostel is not verified yet. Wait for admin approval."})
+
         room = serializer.save(floor=floor)
+
         if images:
             for img in images:
                 RoomImage.objects.create(room=room, image=img)
+
     @action(detail=True, methods=['patch'], url_path='update_availability')  
     def update_availability(self, request, pk=None):
         """  API to mark a room as available/unavailable  """
@@ -332,9 +340,13 @@ class RoomViewSet(viewsets.ModelViewSet):
             return Response({"error": "floor_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            floor = Floor.objects.get(id=floor_id)
+         floor = Floor.objects.get(id=floor_id)
+    # 🛑 Prevent adding rooms if hostel not verified
+         if not floor.hostel.is_verified:
+             return Response({"error": "Hostel is not verified yet. Cannot add rooms."}, status=status.HTTP_403_FORBIDDEN)
         except Floor.DoesNotExist:
             return Response({"error": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
         if not isinstance(rooms_data, list) or len(rooms_data) == 0:
             return Response({"error": "rooms must be a list of room details"}, status=status.HTTP_400_BAD_REQUEST)
@@ -546,6 +558,9 @@ class AvailableHostelsView(generics.ListAPIView):
     serializer_class = HostelSerializer
     permission_classes = [permissions.AllowAny]
 
+
+from rest_framework import serializers
+
 class FloorViewSet(viewsets.ModelViewSet):
     queryset = Floor.objects.all()
     serializer_class = FloorSerializer
@@ -555,6 +570,12 @@ class FloorViewSet(viewsets.ModelViewSet):
         if hostel_id:
             return Floor.objects.filter(hostel_id=hostel_id)
         return super().get_queryset()
+
+    def perform_create(self, serializer):
+        hostel = serializer.validated_data.get('hostel')
+        if not hostel.is_verified:
+            raise serializers.ValidationError({"error": "Hostel is not verified yet. Cannot add floors."})
+        serializer.save()
 
 @api_view(['GET'])
 def get_floors_by_hostel(request, hostel_id):

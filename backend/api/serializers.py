@@ -124,3 +124,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'profile_picture')
+        read_only_fields = ('id', 'username', 'email')  # Make email read-only here if verification is required
