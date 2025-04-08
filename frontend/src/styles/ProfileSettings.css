@@ -1,143 +1,282 @@
 /* ProfileSettings.css */
 .dashboard-layout {
-    display: flex;
-    min-height: 100vh;
-    background-color: #f5f7fa;
-  }
-  
+  display: flex;
+  min-height: 100vh;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 2rem;
+  background-color: #f8f9fa;
+}
+
+.profile-settings {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-settings h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  font-weight: 700;
+  border-bottom: 2px solid #f1f1f1;
+  padding-bottom: 1rem;
+}
+
+.profile-settings h2 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin: 2rem 0 1.5rem;
+  font-weight: 600;
+}
+
+.loading-indicator {
+  padding: 2rem;
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+/* Form styling */
+.profile-form,
+.password-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #34495e;
+  font-size: 0.95rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"] {
+  padding: 0.9rem 1rem;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+  background-color: white;
+}
+
+/* File input styling */
+.file-input-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+#profile-picture-input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background-color: #e9ecef;
+  color: #495057;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-align: center;
+}
+
+.file-input-label:hover {
+  background-color: #dee2e6;
+}
+
+.preview-container {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.profile-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #f1f1f1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.profile-preview:hover {
+  transform: scale(1.05);
+}
+
+/* Button styling */
+.update-btn,
+.password-btn,
+.reset-btn {
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.update-btn {
+  background-color: #3498db;
+  color: white;
+  margin-top: 1rem;
+}
+
+.update-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+.password-btn {
+  background-color: #6c5ce7;
+  color: white;
+}
+
+.password-btn:hover {
+  background-color: #5b4bc4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2);
+}
+
+.reset-btn {
+  background-color: #fd79a8;
+  color: white;
+  width: 100%;
+}
+
+.reset-btn:hover {
+  background-color: #e84393;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 121, 168, 0.2);
+}
+
+/* Password section styling */
+.password-section {
+  margin-top: 2.5rem;
+  border-top: 1px solid #eee;
+  padding-top: 2rem;
+}
+
+.password-options {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.option-btn {
+  flex: 1;
+  padding: 0.8rem;
+  background-color: #f1f1f1;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.option-btn:hover {
+  background-color: #e9ecef;
+}
+
+.option-btn.active-option {
+  background-color: #2c3e50;
+  color: white;
+}
+
+.reset-password-container {
+  background-color: #fff8f8;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #ffe0e0;
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reset-info {
+  margin-bottom: 1.5rem;
+  color: #636e72;
+  line-height: 1.6;
+}
+
+/* Message styling */
+.success-message,
+.error-message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+  font-weight: 500;
+  animation: slideIn 0.4s ease-out;
+}
+
+.success-message {
+  background-color: rgba(46, 213, 115, 0.1);
+  color: #2ed573;
+  border-left: 4px solid #2ed573;
+}
+
+.error-message {
+  background-color: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border-left: 4px solid #ff4757;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
   .dashboard-main {
-    flex: 1;
-    padding: 2rem;
+    padding: 1rem;
   }
   
   .profile-settings {
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    padding: 2rem;
+    padding: 1.5rem;
   }
   
   .profile-settings h1 {
-    color: #2d3748;
     font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f0f2f5;
   }
   
-  .profile-settings h2 {
-    color: #2d3748;
-    font-size: 1.4rem;
-    margin: 2rem 0 1rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #f0f2f5;
+  .preview-container {
+    text-align: center;
   }
   
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #4a5568;
-  }
-  
-  input[type="text"],
-  input[type="password"] {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-  }
-  
-  input[type="text"]:focus,
-  input[type="password"]:focus {
-    border-color: #4299e1;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
-  }
-  
-  input[type="file"] {
-    padding: 0.5rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .profile-preview {
-    display: block;
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-top: 1rem;
-    border: 3px solid #e2e8f0;
-  }
-  
-  button {
-    background-color: #4299e1;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  
-  button:hover {
-    background-color: #3182ce;
-  }
-  
-  .success-message {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background-color: #c6f6d5;
-    color: #276749;
-    border-radius: 6px;
-    font-weight: 500;
-  }
-  
-  .error-message {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background-color: #fed7d7;
-    color: #c53030;
-    border-radius: 6px;
-    font-weight: 500;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .dashboard-layout {
-      flex-direction: column;
-    }
-    
-    .dashboard-main {
-      padding: 1rem;
-    }
-    
-    .profile-settings {
-      padding: 1.5rem;
-    }
-  }
-  
-  /* Password form specific styles */
-  form:nth-of-type(2) {
-    display: flex;
+  .password-options {
     flex-direction: column;
-    gap: 1rem;
   }
-  
-  form:nth-of-type(2) input {
-    margin-bottom: 0.5rem;
-  }
-  
-  form:nth-of-type(2) button {
-    align-self: flex-start;
-    margin-top: 0.5rem;
-  }
+}

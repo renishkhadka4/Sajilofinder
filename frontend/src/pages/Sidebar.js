@@ -5,17 +5,20 @@ import "../styles/Sidebar.css";
 import { 
   FaHome, FaHotel, FaBed, FaBook, FaUserGraduate, FaComment,
   FaBars, FaTimes, FaUserCog, FaSignOutAlt, FaUser, FaBell,
-  FaAngleRight, FaSpinner
+  FaAngleRight, FaSpinner, FaLock, FaKey, FaChevronDown
 } from "react-icons/fa";
 
 const Sidebar = ({ onToggle }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const [user, setUser] = useState({ name: "Loading...", role: "Hostel Owner" });
+  const [user, setUser] = useState({ name: "Loading...", role: "Hostel Owner", profileImage: null });
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotificationBox, setShowNotificationBox] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  
   const notificationRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   const location = useLocation();
 
@@ -28,10 +31,13 @@ const Sidebar = ({ onToggle }) => {
       setCollapsed(storedPreference === "true");
     }
 
-    // Add click event listener to handle clicking outside of notification box
+    // Add click event listener to handle clicking outside of notification box and profile dropdown
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotificationBox(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
       }
     };
 
@@ -58,10 +64,11 @@ const Sidebar = ({ onToggle }) => {
       setUser({
         name: response.data.username || "Unknown Owner",
         role: "Hostel Owner",
+        profileImage: response.data.profile_image || null,
       });
     } catch (error) {
       console.error("Error fetching user data:", error);
-      setUser({ name: "Guest User", role: "Viewer" });
+      setUser({ name: "Guest User", role: "Viewer", profileImage: null });
     }
   };
 
@@ -87,11 +94,18 @@ const Sidebar = ({ onToggle }) => {
   const toggleNotifications = (e) => {
     e.stopPropagation();
     setShowNotificationBox(!showNotificationBox);
+    setShowProfileDropdown(false);
     
     // Refresh notifications when opening the box
     if (!showNotificationBox) {
       fetchNotifications();
     }
+  };
+
+  const toggleProfileDropdown = (e) => {
+    e.stopPropagation();
+    setShowProfileDropdown(!showProfileDropdown);
+    setShowNotificationBox(false);
   };
 
   const isActive = (path) => location.pathname === path ? "active" : "";
@@ -154,8 +168,6 @@ const Sidebar = ({ onToggle }) => {
 
   return (
     <>
-      
-
       <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
           <h2 className="sidebar-title">{!collapsed ? "Hostel Management" : "HM"}</h2>
@@ -164,7 +176,18 @@ const Sidebar = ({ onToggle }) => {
         <div className="sidebar-divider"></div>
 
         <div className="user-profile">
-          <div className="profile-image"><FaUser /></div>
+          <div className="profile-image">
+          <img
+  src={
+    user.profileImage
+      ? `${process.env.REACT_APP_API_BASE_URL}/media/${user.profileImage}`
+      : "/default-avatar.png"
+  }
+/>
+
+
+
+          </div>
           {!collapsed && (
             <div className="profile-info">
               <h3>{user.name}</h3>
@@ -192,6 +215,13 @@ const Sidebar = ({ onToggle }) => {
           <li className={isActive("/feedback")}>
             <Link to="/feedback"><FaComment className="sidebar-icon" /> {!collapsed && <span>Feedback</span>}</Link>
           </li>
+          <li className={isActive("/community")}>
+            <Link to="/community">
+              <FaComment className="sidebar-icon" />
+              {!collapsed && <span>Community</span>}
+            </Link>
+          </li>
+
           <li className={isActive("/notifications")}>
             <div className="notification-icon-wrapper" onClick={toggleNotifications}>
               <FaBell className={`sidebar-icon ${unreadCount > 0 ? 'notification-active' : ''}`} />
@@ -254,8 +284,33 @@ const Sidebar = ({ onToggle }) => {
         <div className="sidebar-divider mt-auto"></div>
 
         <ul className="sidebar-menu account-menu">
-          <li className={isActive("/profile-settings")}>
-            <Link to="/profile-settings"><FaUserCog className="sidebar-icon" /> {!collapsed && <span>Profile Settings</span>}</Link>
+          <li className={`profile-settings-dropdown ${isActive("/profile-settings")}`}>
+            <div 
+              className="profile-settings-toggle"
+              onClick={toggleProfileDropdown}
+            >
+              <FaUserCog className="sidebar-icon" /> 
+              {!collapsed && (
+                <>
+                  <span>Profile Settings</span>
+                  <FaChevronDown className={`dropdown-arrow ${showProfileDropdown ? 'active' : ''}`} />
+                </>
+              )}
+            </div>
+            
+            {showProfileDropdown && !collapsed && (
+              <div className="profile-dropdown-menu" ref={profileDropdownRef}>
+                <Link to="/profile-settings" className="dropdown-item">
+                  <FaUserCog className="dropdown-icon" /> Profile Settings
+                </Link>
+                <Link to="/change-password" className="dropdown-item">
+                  <FaKey className="dropdown-icon" /> Change Password
+                </Link>
+                <Link to="/forgot-password" className="dropdown-item">
+                  <FaLock className="dropdown-icon" /> Forgot Password
+                </Link>
+              </div>
+            )}
           </li>
           <li>
             <Link to="/login" onClick={handleLogout}>

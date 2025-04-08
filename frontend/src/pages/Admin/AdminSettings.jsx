@@ -20,6 +20,18 @@ const AdminSettings = () => {
   const [otp, setOtp] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    message: "Password strength",
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -66,6 +78,35 @@ const AdminSettings = () => {
     }
   };
 
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (name === "newPassword") {
+      checkPasswordStrength(value);
+    }
+  };
+
+  const checkPasswordStrength = (password) => {
+    let score = 0;
+    let strengthMessage = "Very weak";
+    
+    if (password.length >= 8) score++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) score++;
+    if (password.match(/[0-9]/)) score++;
+    if (password.match(/[^a-zA-Z0-9]/)) score++;
+    
+    if (score === 1) strengthMessage = "Weak";
+    else if (score === 2) strengthMessage = "Medium";
+    else if (score === 3) strengthMessage = "Strong";
+    else if (score === 4) strengthMessage = "Very strong";
+    
+    setPasswordStrength({ score, message: strengthMessage });
+  };
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -86,6 +127,60 @@ const AdminSettings = () => {
       toast.error("Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    
+    // Validate password strength
+    if (passwordStrength.score < 2) {
+      toast.error("Please use a stronger password");
+      return;
+    }
+    
+    setChangingPassword(true);
+    
+    try {
+      await api.put("/auth/change-password/", {
+        old_password: passwordData.currentPassword,  // ✅ correct key
+        new_password: passwordData.newPassword
+      });
+      
+      
+      toast.success("Password changed successfully!");
+      localStorage.removeItem("token");
+      setTimeout(() => {
+        window.location.href = "/login";  // ⬅️ Update this path if needed
+      }, 1500); // Wait for toast to show
+    
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordStrength({
+        score: 0,
+        message: "Password strength",
+      });
+      
+    } catch (err) {
+      console.error("Error changing password:", err);
+      if (err.response?.status === 401) {
+        toast.error("Current password is incorrect");
+      } else {
+        toast.error("Failed to change password");
+      }
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -260,6 +355,89 @@ const AdminSettings = () => {
               </form>
             </div>
             
+            <div className="password-change-section">
+              <h3>Change Password</h3>
+              <p className="section-description">
+                Update your password by entering your current password and a new strong password.
+              </p>
+              
+              <form onSubmit={handlePasswordSubmit} className="password-form">
+                <div className="form-group">
+                  <label htmlFor="currentPassword">Current Password</label>
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    name="currentPassword"
+                    placeholder="Enter your current password"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    className="form-control"
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="newPassword">New Password</label>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    name="newPassword"
+                    placeholder="Enter new password"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    className="form-control"
+                    required
+                    disabled={changingPassword}
+                  />
+                  <div className="password-strength">
+                    <div className="strength-meter">
+                      <div 
+                        className={`strength-meter-fill strength-${passwordStrength.score}`}
+                        style={{ width: `${passwordStrength.score * 25}%` }}
+                      ></div>
+                    </div>
+                    <span className="strength-text">{passwordStrength.message}</span>
+                  </div>
+                  <p className="password-requirements">
+                    Password must contain at least 8 characters, including uppercase, lowercase, number, and special character
+                  </p>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm New Password</label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Confirm your new password"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className="form-control"
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+                
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="password-btn"
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? (
+                      <>
+                        <span className="spinner-small"></span>
+                        <span>Changing...</span>
+                      </>
+                    ) : (
+                      "Change Password"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+            
             <div className="email-change-section">
               <h3>Change Email Address</h3>
               <p className="section-description">
@@ -339,6 +517,16 @@ const AdminSettings = () => {
                 </div>
               )}
             </div>
+            <div className="forgot-password-wrapper">
+  <p>Forgot your password?</p>
+  <button 
+    className="forgot-password-btn" 
+    onClick={() => window.location.href = "/forgot-password"}
+  >
+    Go to Forgot Password
+  </button>
+</div>
+
           </div>
         </div>
       </div>

@@ -23,6 +23,7 @@ from .views import (
     user_distribution_data,
     feedback_rating_data,
 )
+from .views import SendAdminNotificationView
 router = DefaultRouter()
 router.register('reports', UserReportViewSet)
 router.register(r'all-users', UserViewSet, basename='admin-users')
@@ -59,5 +60,6 @@ urlpatterns = [
     path('dashboard/booking-trend/', booking_trend_data),
     path('dashboard/user-distribution/', user_distribution_data),
     path('dashboard/feedback-ratings/', feedback_rating_data),
+    path('send-notification/', SendAdminNotificationView.as_view(), name='admin-send-notification'),
 ]
 

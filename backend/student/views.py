@@ -251,7 +251,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         if response.status_code == 200:
             data = response.json()
-            print("🔍 Khalti Payment Lookup Response:", data)
+            print(" Khalti Payment Lookup Response:", data)
 
             if data["status"] == "Completed":
                 try:

@@ -34,7 +34,11 @@ import AdminTransactions from "./pages/Admin/AdminTransactions";
 import AdminSettings from "./pages/Admin/AdminSettings";
 import AdminBlog from "./pages/Admin/AdminBlog";
 import AdminAboutUs from "./pages/Admin/AdminAboutUs";
-
+import HostelDetailsPage from './pages/HostelDeatilsPage';
+import SendNotification from './pages/Admin/SendNotification';
+import CommunityFeed from './pages/HostelOwnerCoummnity';
+import ChangePassword from './pages/ChangePassword';
+import Notifications from './pages/Notifications';
 // Inside your App component
 <Routes>
   {/* existing routes */}
@@ -77,6 +81,12 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin/blogs" element={<AdminBlog />} />
+        <Route path="/hostels/:id" element={<HostelDetailsPage />} /> 
+        <Route path="/admin/send-notification" element={<SendNotification />} />
+        <Route path="/community" element={<CommunityFeed />} />
+     
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/notifications" element={<Notifications />} />
         
 <Route path="/admin/about-us" element={<AdminAboutUs />} />
         <Route

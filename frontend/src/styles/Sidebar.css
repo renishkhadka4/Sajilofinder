@@ -481,3 +481,112 @@
     margin: 0 auto;
   }
 }
+/* Add these styles to your existing Sidebar.css file */
+
+/* Profile image enhancements */
+.profile-image {
+  min-width: 40px;
+  height: 40px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  overflow: hidden; /* Added to contain the image */
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures the image covers the entire container */
+}
+
+/* Profile settings dropdown styling */
+.profile-settings-dropdown {
+  position: relative;
+}
+
+.profile-settings-toggle {
+  cursor: pointer;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: var(--text-color);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.profile-settings-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--primary-color);
+}
+
+.profile-settings-dropdown.active .profile-settings-toggle {
+  background-color: var(--sidebar-active);
+  color: var(--primary-color);
+  font-weight: 600;
+  border-left: 3px solid var(--primary-color);
+}
+
+.dropdown-arrow {
+  margin-left: auto;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow.active {
+  transform: rotate(180deg);
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 8px 8px;
+  box-shadow: var(--box-shadow);
+  z-index: 1005;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px 12px 40px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--primary-color);
+}
+
+.dropdown-icon {
+  font-size: 1rem;
+  min-width: 20px;
+}
+
+/* Adjustment for collapsed sidebar */
+.sidebar.collapsed .profile-settings-dropdown .profile-dropdown-menu {
+  left: var(--sidebar-collapsed-width);
+  width: 200px;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Mobile responsiveness for dropdown */
+@media (max-width: 768px) {
+  .profile-dropdown-menu {
+    width: 200px;
+    left: auto;
+    right: 0;
+  }
+}

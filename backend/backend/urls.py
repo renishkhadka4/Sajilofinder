@@ -10,6 +10,8 @@ urlpatterns = [
     path('api/hostel_owner/', include('hostel_owner.urls')),
     path('api/students/', include('student.urls')),
     path('api/admin/', include('admin_panel.urls')),
+    path('api/community/', include('community.urls')),
+
 
 ]
 if settings.DEBUG:

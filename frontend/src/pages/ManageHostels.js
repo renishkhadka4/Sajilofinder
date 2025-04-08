@@ -648,37 +648,38 @@ const ManageHostels = () => {
           <div className="hostels-grid">
             {hostels.map((hostel, index) => (
               <motion.div 
-                key={hostel.id} 
-                className="hostel-card"
-                style={{"--index": index}}
-                whileHover={{ y: -10, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
-              >
-                {hostel.isNew && <span className="new-badge">New</span>}
-                <img
-                  src={hostel.images?.[0]?.image || '/placeholder.png'}
-                  alt={hostel.name}
-                  className="hostel-image"
-                  onError={(e) => { e.target.src = "/placeholder.png"; }}
-                />
-                <h3>{hostel.name}</h3>
-                <p><span>📍 Location:</span> {hostel.address || "N/A"}</p>
-                <p><span>🏠 Owned by:</span> {hostel.owner || "You"}</p>
-                <div className="hostel-stats">
-                  <div className="stat">
-                    <span className="stat-value">₹{hostel.rent_min !== undefined ? hostel.rent_min : 'N/A'}</span>
-                    <span className="stat-label">Min Rent</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-value">{getFacilitiesCount(hostel)}</span>
-                    <span className="stat-label">Facilities</span>
-                  </div>
+              key={hostel.id} 
+              className="hostel-card"
+              style={{"--index": index}}
+              whileHover={{ y: -10, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
+              onClick={() => navigate(`/hostels/${hostel.id}`)} 
+            >
+              {hostel.isNew && <span className="new-badge">New</span>}
+              <img
+                src={hostel.images?.[0]?.image || '/placeholder.png'}
+                alt={hostel.name}
+                className="hostel-image"
+                onError={(e) => { e.target.src = "/placeholder.png"; }}
+              />
+              <h3>{hostel.name}</h3>
+              <p><span>📍 Location:</span> {hostel.address || "N/A"}</p>
+              <p><span>🏠 Owned by:</span> {hostel.owner || "You"}</p>
+              <div className="hostel-stats">
+                <div className="stat">
+                  <span className="stat-value">Rs{hostel.rent_min !== undefined ? hostel.rent_min : 'N/A'}</span>
+                  <span className="stat-label">Min Rent</span>
                 </div>
-                <div className="hostel-card-actions">
-                  <button onClick={() => navigate(`/manage-hostels/${hostel.id}`)}>✏️ Edit</button>
-                  <button onClick={() => handleDelete(hostel.id)}>🗑 Delete</button>
-                  <button onClick={() => navigate(`/manage-rooms/${hostel.id}`)}> Add Floors & Rooms </button>
+                <div className="stat">
+                  <span className="stat-value">{getFacilitiesCount(hostel)}</span>
+                  <span className="stat-label">Facilities</span>
                 </div>
-              </motion.div>
+              </div>
+              <div className="hostel-card-actions" onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => navigate(`/manage-hostels/${hostel.id}`)}>✏️ Edit</button>
+                <button onClick={() => handleDelete(hostel.id)}>🗑 Delete</button>
+                <button onClick={() => navigate(`/manage-rooms/${hostel.id}`)}> Add Floors & Rooms </button>
+              </div>
+            </motion.div>
             ))}
           </div>
         )}

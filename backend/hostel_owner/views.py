@@ -952,3 +952,14 @@ def mark_notification_as_read(request, notification_id):
 def mark_all_notifications_as_read(request):
     OwnerNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return Response({"message": "All notifications marked as read"}, status=200)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_notification(request, notification_id):
+    try:
+        notif = OwnerNotification.objects.get(id=notification_id, user=request.user)
+        notif.delete()
+        return Response({"message": "Notification deleted"}, status=204)
+    except OwnerNotification.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=404)

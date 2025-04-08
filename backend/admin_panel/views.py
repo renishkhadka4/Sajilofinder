@@ -487,3 +487,50 @@ def feedback_rating_data(request):
 
     feedback_data = Feedback.objects.values('rating').annotate(count=Count('id')).order_by('rating')
     return Response(feedback_data)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from api.models import CustomUser
+from .models import AdminNotification
+from .serializers import AdminNotificationSerializer
+from student.models import Notification as StudentNotification
+from hostel_owner.models import OwnerNotification
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from api.models import CustomUser
+from student.models import Notification as StudentNotification
+from hostel_owner.models import OwnerNotification
+
+# admin_panel/views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from api.models import CustomUser
+from student.models import Notification as StudentNotification
+from hostel_owner.models import OwnerNotification
+
+class SendAdminNotificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        message = request.data.get("message")
+        target_roles = request.data.get("roles", [])
+
+        if not message or not target_roles:
+            return Response({"error": "Message and roles are required"}, status=400)
+
+        total = 0
+        for role in target_roles:
+            role = role.lower()
+            users = CustomUser.objects.filter(role__iexact=role)
+            for user in users:
+                if role == "student":
+                    StudentNotification.objects.create(user=user, message=message)
+                elif role == "hostelowner":
+                    OwnerNotification.objects.create(user=user, message=message)
+                total += 1
+
+        return Response({"message": f"Notification sent to {total} users."})

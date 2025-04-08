@@ -64,3 +64,16 @@ class AboutUs(models.Model):
 
     def __str__(self):
         return self.title
+
+
+from django.db import models
+from api.models import CustomUser
+
+class AdminNotification(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"To {self.user.username}: {self.message[:30]}"

@@ -30,6 +30,8 @@ const AdminSidebar = ({ userName = 'Admin', userRole = 'Administrator', userAvat
     { path: '/admin/messages', icon: <FaEnvelopeOpenText />, label: 'Messages' },
     { path: '/admin/about-us', icon: <FaInfoCircle />, label: 'About Us' },
     { path: '/admin/settings', icon: <FaUserCog />, label: 'Settings' },
+    { path: '/admin/send-notification', icon: <FaExclamationTriangle />, label: 'Send Notification' },
+
   ], []);
 
   // Check if a path is active or if any of its sub-paths are active
@@ -74,7 +76,7 @@ const AdminSidebar = ({ userName = 'Admin', userRole = 'Administrator', userAvat
       </nav>
       
       <div className="admin-sidebar-footer">
-        <Link to="/admin/logout" className="admin-sidebar-logout">
+        <Link to="/login" className="admin-sidebar-logout">
           <span className="icon"><FaSignOutAlt /></span>
           <span>Logout</span>
         </Link>

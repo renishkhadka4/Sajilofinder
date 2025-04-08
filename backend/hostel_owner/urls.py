@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     HostelViewSet, RoomViewSet, BookingViewSet, FeedbackViewSet, DashboardView,
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
-    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView,OwnerNotificationListView
+    FloorViewSet, get_current_user, HostelOwnerProfileView,get_all_hostel_students ,DownloadReportView,ChatHistoryView,OwnerNotificationListView,delete_notification
 )
 from .views import mark_notification_as_read, mark_all_notifications_as_read
 router = DefaultRouter()
@@ -30,6 +30,8 @@ urlpatterns = [
 
     path("notifications/<int:notification_id>/mark_read/", mark_notification_as_read, name="mark_notification_as_read"),
     path("notifications/mark_all_read/", mark_all_notifications_as_read, name="mark_all_notifications_as_read"),
+    path('notifications/<int:notification_id>/', delete_notification),
+
 
     
 ]

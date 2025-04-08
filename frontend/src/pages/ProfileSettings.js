@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import Sidebar from "../pages/Sidebar"; // ✅ Sidebar included
+import Sidebar from "../pages/Sidebar"; 
 import "../styles/ProfileSettings.css";
 
 const ProfileSettings = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useState({
         username: "",
         first_name: "",
@@ -12,7 +14,11 @@ const ProfileSettings = () => {
     });
 
     const [previewImage, setPreviewImage] = useState(null);
-    const [newPassword, setNewPassword] = useState({ old_password: "", new_password: "" });
+    const [passwordData, setPasswordData] = useState({
+        current_password: "",
+        new_password: "",
+        confirm_password: ""
+    });
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
@@ -28,7 +34,7 @@ const ProfileSettings = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUser(response.data);
-            setPreviewImage(response.data.profile_picture); //  Show profile picture preview
+            setPreviewImage(response.data.profile_picture);
         } catch (error) {
             console.error("Error fetching profile:", error);
         } finally {
@@ -41,11 +47,16 @@ const ProfileSettings = () => {
         setUser((prevUser) => ({ ...prevUser, [name]: value }));
     };
 
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData((prevData) => ({ ...prevData, [name]: value }));
+    };
+
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setUser((prevUser) => ({ ...prevUser, profile_picture: file }));
-            setPreviewImage(URL.createObjectURL(file)); //  Show uploaded image preview
+            setPreviewImage(URL.createObjectURL(file));
         }
     };
 
@@ -69,91 +80,155 @@ const ProfileSettings = () => {
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
             });
 
-            setMessage(" Profile updated successfully!");
-            fetchUserProfile(); //  Refetch updated user data
+            setMessage("✅ Profile updated successfully!");
+            fetchUserProfile();
         } catch (error) {
             console.error("Error updating profile:", error);
             setError("⚠ Failed to update profile.");
         }
     };
 
-    const handlePasswordChange = async (e) => {
+    const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         setMessage("");
         setError("");
-        let token = localStorage.getItem("token");
-
-        if (!newPassword.old_password || !newPassword.new_password) {
-            setError("⚠ Please enter both old and new passwords.");
+        
+        // Validate password data
+        if (!passwordData.current_password) {
+            setError("⚠ Please enter your current password.");
             return;
         }
-
+        
+        if (!passwordData.new_password) {
+            setError("⚠ Please enter a new password.");
+            return;
+        }
+        
+        if (passwordData.new_password !== passwordData.confirm_password) {
+            setError("⚠ New passwords don't match.");
+            return;
+        }
+        
+        let token = localStorage.getItem("token");
+        
         try {
-            await api.put("/auth/change-password/", newPassword, {
+            await api.put("/auth/change-password/", {
+                old_password: passwordData.current_password,
+                new_password: passwordData.new_password
+            }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            setMessage(" Password updated successfully!");
-            setNewPassword({ old_password: "", new_password: "" }); //  Clear password fields
+            setMessage("✅ Password updated successfully!");
+            setPasswordData({
+                current_password: "",
+                new_password: "",
+                confirm_password: ""
+            });
         } catch (error) {
             console.error("Error changing password:", error);
-            setError("⚠ Failed to update password.");
+            if (error.response && error.response.status === 400) {
+                setError("⚠ Incorrect current password.");
+            } else {
+                setError("⚠ Failed to update password.");
+            }
         }
     };
 
     return (
         <div className="dashboard-layout">
-            <Sidebar /> {/*  Include the Sidebar */}
+            <Sidebar />
             <div className="dashboard-main">
                 <div className="profile-settings">
                     <h1>Profile Settings</h1>
                     {loading ? (
-                        <p>Loading...</p>
+                        <p className="loading-indicator">Loading...</p>
                     ) : (
                         <>
-                            <form onSubmit={handleSubmit}>
-                                <div className="form-group">
-                                    <label>Username</label>
-                                    <input type="text" name="username" value={user.username} onChange={handleChange} />
+                            <div className="settings-container">
+                                <div className="profile-section">
+                                    <h2>Personal Information</h2>
+                                    <form onSubmit={handleSubmit} className="profile-form">
+                                        <div className="form-group">
+                                            <label>Username</label>
+                                            <input type="text" name="username" value={user.username} onChange={handleChange} />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>First Name</label>
+                                            <input type="text" name="first_name" value={user.first_name} onChange={handleChange} />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Last Name</label>
+                                            <input type="text" name="last_name" value={user.last_name} onChange={handleChange} />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Profile Picture</label>
+                                            <div className="file-input-container">
+                                                <input 
+                                                    type="file" 
+                                                    name="profile_picture" 
+                                                    accept="image/*" 
+                                                    onChange={handleImageChange} 
+                                                    id="profile-picture-input" 
+                                                />
+                                                <label htmlFor="profile-picture-input" className="file-input-label">
+                                                    Choose Image
+                                                </label>
+                                            </div>
+                                            {previewImage && (
+                                                <div className="preview-container">
+                                                    <img src={previewImage} alt="Profile Preview" className="profile-preview" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button type="submit" className="update-btn">Update Profile</button>
+                                    </form>
                                 </div>
 
-                                <div className="form-group">
-                                    <label>First Name</label>
-                                    <input type="text" name="first_name" value={user.first_name} onChange={handleChange} />
+                                <div className="password-section">
+                                    <h2>Change Password</h2>
+                                    <form onSubmit={handlePasswordSubmit} className="password-form">
+                                        <div className="form-group">
+                                            <label>Current Password</label>
+                                            <input
+                                                type="password"
+                                                name="current_password"
+                                                value={passwordData.current_password}
+                                                onChange={handlePasswordChange}
+                                                placeholder="Enter your current password"
+                                            />
+                                        </div>
+                                        
+                                        <div className="form-group">
+                                            <label>New Password</label>
+                                            <input
+                                                type="password"
+                                                name="new_password"
+                                                value={passwordData.new_password}
+                                                onChange={handlePasswordChange}
+                                                placeholder="Enter your new password"
+                                            />
+                                        </div>
+                                        
+                                        <div className="form-group">
+                                            <label>Confirm New Password</label>
+                                            <input
+                                                type="password"
+                                                name="confirm_password"
+                                                value={passwordData.confirm_password}
+                                                onChange={handlePasswordChange}
+                                                placeholder="Confirm your new password"
+                                            />
+                                        </div>
+                                        
+                                        <button type="submit" className="password-btn">Update Password</button>
+                                    </form>
                                 </div>
-
-                                <div className="form-group">
-                                    <label>Last Name</label>
-                                    <input type="text" name="last_name" value={user.last_name} onChange={handleChange} />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Profile Picture</label>
-                                    <input type="file" name="profile_picture" accept="image/*" onChange={handleImageChange} />
-                                    {previewImage && <img src={previewImage} alt="Profile Preview" className="profile-preview" />}
-                                </div>
-
-                                <button type="submit">Update Profile</button>
-                            </form>
-
-                            <form onSubmit={handlePasswordChange}>
-                                <h2>Change Password</h2>
-                                <input
-                                    type="password"
-                                    name="old_password"
-                                    placeholder="Old Password"
-                                    value={newPassword.old_password}
-                                    onChange={(e) => setNewPassword({ ...newPassword, old_password: e.target.value })}
-                                />
-                                <input
-                                    type="password"
-                                    name="new_password"
-                                    placeholder="New Password"
-                                    value={newPassword.new_password}
-                                    onChange={(e) => setNewPassword({ ...newPassword, new_password: e.target.value })}
-                                />
-                                <button type="submit">Change Password</button>
-                            </form>
+                            </div>
 
                             {message && <p className="success-message">{message}</p>}
                             {error && <p className="error-message">{error}</p>}

@@ -98,3 +98,12 @@ class AboutUsSerializer(serializers.ModelSerializer):
 
     def get_services_list(self, obj):
         return obj.service_list()
+
+
+from rest_framework import serializers
+from .models import AdminNotification
+
+class AdminNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminNotification
+        fields = '__all__'
