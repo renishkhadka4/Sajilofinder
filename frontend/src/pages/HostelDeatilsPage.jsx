@@ -47,7 +47,18 @@ const HostelDetailsPage = () => {
       }
     }
   }, [hostel, showMap]);
-
+  useEffect(() => {
+    if (!hostel || !showMap) return;
+  
+    if (hostel.latitude && hostel.longitude) {
+      setMapCoordinates([parseFloat(hostel.latitude), parseFloat(hostel.longitude)]);
+    } else {
+      geocodeAddress(); // fallback to address or Google link
+    }
+  }, [hostel, showMap]);
+  
+  
+  
   const geocodeAddress = async () => {
     if (!hostel) return;
     
@@ -324,12 +335,19 @@ const HostelDetailsPage = () => {
                     </div>
                   ) : mapCoordinates ? (
                     <div className="hostel-map-container">
-                      <MapContainer 
-                        center={mapCoordinates} 
-                        zoom={15} 
-                        style={{ height: "400px", width: "100%", borderRadius: "8px", marginTop: "10px" }}
-                        ref={mapRef}
-                      >
+                    <MapContainer
+  center={mapCoordinates}
+  zoom={15}
+  style={{ height: "400px", width: "100%", borderRadius: "8px", marginTop: "10px" }}
+  whenCreated={(mapInstance) => {
+    mapRef.current = mapInstance;
+    setTimeout(() => {
+      mapInstance.invalidateSize(); // 🔥 Key to force Leaflet to calculate dimensions
+    }, 300); // Delay ensures container is fully rendered
+  }}
+>
+
+
                         <TileLayer
                           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

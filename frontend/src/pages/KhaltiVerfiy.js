@@ -21,7 +21,7 @@ const KhaltiVerify = () => {
         const token = localStorage.getItem("token");
 
         const response = await api.post(
-          "/students/bookings/verify-payment/",
+          "/students/verify-khalti/",
           { pidx },
           {
             headers: {

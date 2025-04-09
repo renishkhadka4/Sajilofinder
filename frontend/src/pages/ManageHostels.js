@@ -8,8 +8,35 @@ import 'react-toastify/dist/ReactToastify.css';
 import api from '../api/axios';
 import Sidebar from '../pages/Sidebar';
 import '../styles/ManageHostels.css';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { useRef } from 'react';
+
+import L from 'leaflet';
+import markerIconPng from "leaflet/dist/images/marker-icon.png";
+
+
+
 
 const API_BASE_URL = "http://localhost:8000";
+
+const markerIcon = new L.Icon({
+  iconUrl: markerIconPng,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+const MapWrapper = ({ children }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+  }, [map]);
+
+  return children;
+};
 
 const ManageHostels = () => {
   const navigate = useNavigate();
@@ -18,6 +45,7 @@ const ManageHostels = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [previewImages, setPreviewImages] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
+  
   const [formValidation, setFormValidation] = useState({
     step1: false,
     step2: false,
@@ -36,6 +64,8 @@ const ManageHostels = () => {
     state: '',
     zip: '',
     googleMapsLink: '',
+    latitude: '',
+    longitude: '',
     nearby_colleges: '',
     nearby_markets: '',
     cancellation_policy: {
@@ -110,7 +140,28 @@ const ManageHostels = () => {
       [`step${currentStep}`]: isValid
     }));
   };
-
+  const LocationMarker = () => {
+    useMapEvents({
+      click(e) {
+        const { lat, lng } = e.latlng;
+        setFormData((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`
+        }));
+      }
+    });
+  
+    return formData.latitude && formData.longitude ? (
+      <Marker
+        position={[formData.latitude, formData.longitude]}
+        icon={markerIcon}
+      />
+    ) : null;
+  };
+  
+  
   const refreshAccessToken = async () => {
     try {
       const refreshToken = localStorage.getItem('refresh');
@@ -311,6 +362,9 @@ const ManageHostels = () => {
       data.append('state', formData.state);
       data.append('zip_code', formData.zip);
       data.append('google_maps_link', formData.googleMapsLink);
+      data.append("latitude", formData.latitude);
+      data.append("longitude", formData.longitude);
+
       data.append('nearby_colleges', formData.nearby_colleges);
       data.append('nearby_markets', formData.nearby_markets);
       data.append('category', formData.category);
@@ -448,6 +502,28 @@ const ManageHostels = () => {
           <input name="googleMapsLink" placeholder="Google Maps Link" value={formData.googleMapsLink} onChange={handleChange} />
         </div>
       </div>
+      <div className="form-alin">
+  <label>Pick Location on Map</label>
+  <div className="leaflet-map-container">
+    <MapContainer
+      center={[27.7172, 85.3240]}
+      zoom={13}
+      scrollWheelZoom={true}
+      style={{ height: "300px", width: "100%" }}
+    >
+      <MapWrapper>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors"
+        />
+        <LocationMarker />
+      </MapWrapper>
+    </MapContainer>
+  </div>
+</div>
+
+
+
 
       <div className="form-section">
         <h3>Nearby Places</h3>
@@ -464,6 +540,7 @@ const ManageHostels = () => {
       </div>
     </div>
   );
+ 
 
   const renderFormStep3 = () => (
     <div className={`form-step ${currentStep === 3 ? 'active' : ''}`}>

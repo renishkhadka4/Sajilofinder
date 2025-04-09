@@ -35,7 +35,8 @@ class HostelSerializer(serializers.ModelSerializer):
             "rent_min", "rent_max", "security_deposit",
             "smoking_allowed", "alcohol_allowed", "pets_allowed", "visiting_hours",
             "nearby_colleges", "nearby_markets", "created_at",
-            "images", "category"
+            "images", "category","latitude","longitude",
+
         ]
 
 class RoomImageSerializer(serializers.ModelSerializer):

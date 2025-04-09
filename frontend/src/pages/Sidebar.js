@@ -7,6 +7,7 @@ import {
   FaBars, FaTimes, FaUserCog, FaSignOutAlt, FaUser, FaBell,
   FaAngleRight, FaSpinner, FaLock, FaKey, FaChevronDown
 } from "react-icons/fa";
+import { MessageSquare } from 'lucide-react';
 
 const Sidebar = ({ onToggle }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -19,6 +20,7 @@ const Sidebar = ({ onToggle }) => {
   
   const notificationRef = useRef(null);
   const profileDropdownRef = useRef(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const location = useLocation();
 
@@ -57,9 +59,11 @@ const Sidebar = ({ onToggle }) => {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await api.get("/hostel_owner/profile/", {
+      const response = await api.get("/auth/profile/", {
+
         headers: { Authorization: `Bearer ${token}` },
       });
+      setPreviewImage(response.data.profile_picture);
 
       setUser({
         name: response.data.username || "Unknown Owner",
@@ -177,15 +181,13 @@ const Sidebar = ({ onToggle }) => {
 
         <div className="user-profile">
           <div className="profile-image">
-          <img
-  src={
-    user.profileImage
-      ? `${process.env.REACT_APP_API_BASE_URL}/media/${user.profileImage}`
-      : "/default-avatar.png"
-  }
-/>
-
-
+          <div className="profile-image">
+  <img
+    src={previewImage || "/default-avatar.png"}
+    alt="Profile"
+    className="profile-preview"
+  />
+</div>
 
           </div>
           {!collapsed && (
@@ -221,6 +223,13 @@ const Sidebar = ({ onToggle }) => {
               {!collapsed && <span>Community</span>}
             </Link>
           </li>
+          <li className={isActive("/owner/chat")}>
+  <Link to="/owner/chat">
+    <MessageSquare className="sidebar-icon" />
+    {!collapsed && <span>Messages</span>}
+  </Link>
+</li>
+
 
           <li className={isActive("/notifications")}>
             <div className="notification-icon-wrapper" onClick={toggleNotifications}>

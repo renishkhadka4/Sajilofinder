@@ -17,7 +17,7 @@ import HostelDetail from "./pages/HostelDetail";
 import ManageHostelDetail from './pages/ManageHostelDetail';
 import ManageFloorsRoomsDetail from './pages/ManageFloorsRoomsDetail';
 import ProfileSettings from './pages/ProfileSettings';
-import HostelOwnerChat from './pages/HostelOwnerChat';
+
 import RoomDetail from "./pages/RoomDetail";
 import KhaltiVerify from "./pages/KhaltiVerfiy";
 import MyBookings from "./pages/MyBookings"; 
@@ -39,12 +39,9 @@ import SendNotification from './pages/Admin/SendNotification';
 import CommunityFeed from './pages/HostelOwnerCoummnity';
 import ChangePassword from './pages/ChangePassword';
 import Notifications from './pages/Notifications';
-// Inside your App component
-<Routes>
-  {/* existing routes */}
-  <Route path="/forgot-password" element={<ForgotPassword />} />
-  <Route path="/reset-password/:token" element={<ResetPassword />} />
-</Routes>
+import HostelOwnerChat from './pages/HostelOwnerMessenger';
+import StudentMessenger from './pages/StudentMessenger';
+
 
 // Protect routes based on user roles
 const ProtectedRoute = ({ role, children }) => {
@@ -87,7 +84,10 @@ function App() {
      
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/notifications" element={<Notifications />} />
-        
+        <Route path="/owner/chat" element={<HostelOwnerChat />} />
+        <Route path="/student/chat" element={<StudentMessenger />} />
+ 
+
 <Route path="/admin/about-us" element={<AdminAboutUs />} />
         <Route
   path="/admin/dashboard"

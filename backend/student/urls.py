@@ -12,6 +12,11 @@ from .views import (
 from .views import mark_all_notifications_read
 from .views import update_feedback, delete_feedback
 from .views import get_current_user
+from .views import verify_khalti_payment
+
+from .views import student_chat_history
+from .views import student_profile,get_hostel_owner_by_hostel
+
 router = DefaultRouter()
 
 router.register(r'bookings', BookingViewSet, basename='student-bookings')
@@ -28,6 +33,12 @@ urlpatterns = [
     path("feedback/<int:pk>/update/", update_feedback, name="update-feedback"),
     path("feedback/<int:pk>/delete/", delete_feedback, name="delete-feedback"),
     path("me/", get_current_user, name="get-current-user"),
+    path("verify-khalti/", verify_khalti_payment, name="verify-khalti"),
+    path('chat-history/<int:hostel_id>/', student_chat_history),
+    path('profile/', student_profile),
+    path('get-owner/<int:hostel_id>/', get_hostel_owner_by_hostel),
+
+
 
     path('', include(router.urls)),  
 ]

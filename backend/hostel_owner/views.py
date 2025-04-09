@@ -384,13 +384,18 @@ class RoomViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_current_user(request):
-    if request.user.is_authenticated:
-        return Response({
-            "name": request.user.full_name,
-            "role": request.user.role
-        })
-    return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
+    return Response({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+    })
+
 
 
 
@@ -715,7 +720,33 @@ class DashboardView(APIView):
             "available_rooms": available_rooms,
         }, status=200)
 
+# student/views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from api.models import CustomUser
+from api.serializers import CustomUserSerializer
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_students(request):
+    students = CustomUser.objects.filter(role='Student')
+    serializer = CustomUserSerializer(students, many=True)
+    return Response({"students": serializer.data})
+
+from django.db.models import Q
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_hostel_students(request):
+    owner = request.user
+    hostels = Hostel.objects.filter(owner=owner)
+    bookings = Booking.objects.filter(room__floor__hostel__in=hostels).select_related('student')
+    
+    # ✅ remove duplicates by ID
+    unique_students = {booking.student.id: booking.student for booking in bookings if booking.student}
+    serializer = CustomUserSerializer(unique_students.values(), many=True)
+    return Response({"students": serializer.data})
 
 
 
@@ -865,27 +896,33 @@ class DownloadReportView(APIView):
 
 class ChatHistoryView(APIView):
     """
-    API to fetch chat history between a student and hostel owner.
+    API to fetch chat history for a given hostel.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, hostel_id):
         user = request.user
 
+        # Optional: Check if user is owner of this hostel (safety check)
+        if not Hostel.objects.filter(id=hostel_id, owner=user).exists():
+            return Response({"error": "Unauthorized"}, status=403)
+
         # Get chat messages related to the hostel
         messages = ChatMessage.objects.filter(hostel_id=hostel_id).order_by("timestamp")
 
         chat_data = [
             {
-                "sender": message.sender.username,
-                "receiver": message.receiver.username,
-                "message": message.message,
-                "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "sender": msg.sender.username,
+                "receiver": msg.receiver.username,
+                "message": msg.message,
+                "image_url": msg.image.url if msg.image else None,
+                "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             }
-            for message in messages
+            for msg in messages
         ]
 
         return Response(chat_data)
+
 
 
 from django.core.mail import send_mail
@@ -963,3 +1000,24 @@ def delete_notification(request, notification_id):
         return Response({"message": "Notification deleted"}, status=204)
     except OwnerNotification.DoesNotExist:
         return Response({"error": "Notification not found"}, status=404)
+
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from hostel_owner.models import ChatMessage
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_message(request, message_id):
+    try:
+        message = ChatMessage.objects.get(id=message_id)
+
+        if message.sender != request.user:
+            return Response({"error": "Not allowed to delete this message"}, status=403)
+
+        message.delete()
+        return Response({"message": "Message deleted successfully"}, status=204)
+    except ChatMessage.DoesNotExist:
+        return Response({"error": "Message not found"}, status=404)

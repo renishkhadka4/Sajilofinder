@@ -111,6 +111,9 @@ from django.conf import settings
 import requests
 from hostel_owner.models import Payment
 
+
+logger = logging.getLogger(__name__)
+
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
@@ -281,6 +284,62 @@ class BookingViewSet(viewsets.ModelViewSet):
         else:
             return Response(response.json(), status=400)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_khalti_payment(request):
+    pidx = request.data.get("pidx")
+
+    if not pidx:
+        return Response({"error": "pidx is required"}, status=400)
+
+    try:
+        headers = {
+            "Authorization": f"Key {settings.KHALTI_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {"pidx": pidx}
+
+        response = requests.post("https://dev.khalti.com/api/v2/epayment/lookup/", json=payload, headers=headers)
+
+        print("🔍 Khalti Response:", response.status_code, response.json())
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if data["status"] == "Completed":
+                booking = Booking.objects.get(pidx=pidx)
+
+                # Confirm booking
+                booking.status = "confirmed"
+                booking.save()
+
+                # Create payment if not exists
+                Payment.objects.get_or_create(
+                    booking=booking,
+                    defaults={
+                        "student": request.user,
+                        "amount": data["total_amount"] / 100,
+                        "transaction_id": data["transaction_id"],
+                        "status": "success",
+                        "payment_method": "Khalti"
+                    }
+                )
+
+                from hostel_owner.views import send_booking_email
+                send_booking_email(booking, "Confirmed")
+
+                return Response({"message": "Payment verified and booking confirmed!"}, status=200)
+
+            else:
+                return Response({"message": "Payment not completed", "status": data["status"]}, status=400)
+
+        return Response(response.json(), status=response.status_code)
+
+    except Exception as e:
+        print("❌ Exception during Khalti verification:", str(e))
+        return Response({"error": "Something went wrong while verifying payment."}, status=500)
 
 
 
@@ -485,3 +544,59 @@ def get_current_user(request):
         "email": user.email,
         "role": user.role
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_chat_history(request, hostel_id):
+    user = request.user
+    from hostel_owner.models import ChatMessage
+
+    messages = ChatMessage.objects.filter(hostel_id=hostel_id).order_by("timestamp")
+
+    chat_data = [
+        {
+            "sender": msg.sender.username,
+            "receiver": msg.receiver.username,
+            "message": msg.message,
+            "image_url": msg.image.url if msg.image else None,
+            "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for msg in messages
+        if msg.sender == user or msg.receiver == user
+    ]
+
+    return Response(chat_data)
+
+
+# student/views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_profile(request):
+    user = request.user
+    return Response({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_hostel_owner_by_hostel(request, hostel_id):
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+        owner = hostel.owner
+        return Response({
+            "id": owner.id,
+            "username": owner.username,
+            "email": owner.email
+        })
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found"}, status=404)
