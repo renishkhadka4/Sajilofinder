@@ -3,8 +3,20 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/Hostels.css";
 import Navbar from "../components/Navbar";
-import { Star, MapPin, User, Wifi, Coffee, Shield, Search, Calendar, X } from "lucide-react";
-
+import { 
+  Star, 
+  MapPin, 
+  User, 
+  Wifi, 
+  Coffee, 
+  Shield, 
+  Search, 
+  Calendar, 
+  X,
+  ChevronDown,
+  Filter,
+  Clock
+} from "lucide-react";
 
 const Hostels = () => {
   const [hostels, setHostels] = useState([]);
@@ -15,10 +27,12 @@ const Hostels = () => {
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [priceRange, setPriceRange] = useState([0, 20000]);
+  const [sortBy, setSortBy] = useState("recommended");
   const datePickerRef = useRef(null);
+  const filterPanelRef = useRef(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
- 
-  
   useEffect(() => {
     const fetchHostels = async () => {
       setLoading(true);
@@ -33,11 +47,13 @@ const Hostels = () => {
       }
     };
     fetchHostels();
+    
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
         setShowDatePicker(false);
       }
     };
+    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -53,40 +69,68 @@ const Hostels = () => {
       );
     }
     
-    
     // Search term filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       results = results.filter(
         hostel => 
-          hostel.name.toLowerCase().includes(term) || 
-          hostel.address.toLowerCase().includes(term) ||
-          hostel.owner.toLowerCase().includes(term)
+          hostel.name?.toLowerCase().includes(term) || 
+          hostel.address?.toLowerCase().includes(term) ||
+          hostel.owner?.toLowerCase().includes(term)
       );
     }
     
     // Date availability filter
     if (checkInDate && checkOutDate) {
-      // In a real application, you would check availability against the backend
-      // Here we're simulating this by filtering based on a theoretical availability field
       results = results.filter(hostel => hostel.has_vacancy);
+    }
+    
+    // Price range filter
+    results = results.filter(hostel => {
+      const price = parseInt(hostel.price?.replace(/,/g, '') || 5000);
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+    
+    // Sort results
+    switch(sortBy) {
+      case "price-low":
+        results.sort((a, b) => {
+          const priceA = parseInt(a.price?.replace(/,/g, '') || 5000);
+          const priceB = parseInt(b.price?.replace(/,/g, '') || 5000);
+          return priceA - priceB;
+        });
+        break;
+      case "price-high":
+        results.sort((a, b) => {
+          const priceA = parseInt(a.price?.replace(/,/g, '') || 5000);
+          const priceB = parseInt(b.price?.replace(/,/g, '') || 5000);
+          return priceB - priceA;
+        });
+        break;
+      case "rating":
+        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      default: // "recommended" - No specific sort, server's default order
+        break;
     }
   
     setFilteredHostels(results);
-  }, [hostels, filter, searchTerm, checkInDate, checkOutDate]);
+  }, [hostels, filter, searchTerm, checkInDate, checkOutDate, priceRange, sortBy]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     // The filtering is handled by the useEffect above
   };
   
-  
   const clearFilters = () => {
     setSearchTerm("");
     setCheckInDate("");
     setCheckOutDate("");
     setFilter("all");
+    setPriceRange([0, 20000]);
+    setSortBy("recommended");
     setShowDatePicker(false);
+    setShowMobileFilters(false);
   };
   
   const renderStarRating = (rating) => {
@@ -115,7 +159,6 @@ const Hostels = () => {
     );
   };
   
-
   const renderAmenities = (hostel) => {
     const amenities = [];
     if (hostel.has_wifi) amenities.push(<Wifi size={16} className="amenity-icon" key="wifi" title="WiFi Available" />);
@@ -123,23 +166,35 @@ const Hostels = () => {
     if (hostel.has_security) amenities.push(<Shield size={16} className="amenity-icon" key="security" title="24/7 Security" />);
     
     return amenities.length > 0 ? (
-      <div className="amenities-container">{amenities}</div>
+      <div className="amenities-container">
+        {amenities}
+        {amenities.length > 0 && (
+          <span className="amenities-label">{amenities.length} amenities</span>
+        )}
+      </div>
     ) : null;
   };
   
+  const formatPrice = (price) => {
+    const priceValue = price || "5,000";
+    return isNaN(parseInt(priceValue)) ? priceValue : `₹${priceValue}`;
+  };
 
   return (
     <div className="hostels-page">
       <Navbar />
+      
       <div className="hostels-hero">
-        <h1>Find Your Perfect Hostel</h1>
-        <p>Discover comfortable and affordable accommodations for your stay</p>
+        <div className="hero-content">
+          <h1>Find Your Perfect Hostel</h1>
+          <p>Discover comfortable and affordable accommodations for your stay</p>
+        </div>
       </div>
       
       <div className="search-container">
         <form onSubmit={handleSearch} className="search-form">
           <div className="search-input-group">
-            <Search size={20} className="search-icon" />
+            
             <input
               type="text"
               placeholder="Search by name, location, or owner..."
@@ -155,15 +210,17 @@ const Hostels = () => {
               className="date-picker-toggle"
               onClick={() => setShowDatePicker(!showDatePicker)}
             >
-              <Calendar size={20} className="calendar-icon" />
-              {checkInDate && checkOutDate 
-                ? `${new Date(checkInDate).toLocaleDateString()} - ${new Date(checkOutDate).toLocaleDateString()}`
-                : "Select Dates"}
+              <Calendar size={18} className="calendar-icon" />
+              <span className="date-label">
+                {checkInDate && checkOutDate 
+                  ? `${new Date(checkInDate).toLocaleDateString()} - ${new Date(checkOutDate).toLocaleDateString()}`
+                  : "Select Dates"}
+              </span>
+              <ChevronDown size={16} className="dropdown-icon" />
             </button>
             
             {showDatePicker && (
               <div className="date-picker-dropdown" ref={datePickerRef}>
-
                 <div className="date-picker-inputs">
                   <div className="date-input-group">
                     <label htmlFor="check-in">Check-in:</label>
@@ -185,59 +242,232 @@ const Hostels = () => {
                       min={checkInDate || new Date().toISOString().split('T')[0]}
                     />
                   </div>
+                  <div className="date-actions">
+                    <button 
+                      type="button" 
+                      className="date-close-btn"
+                      onClick={() => setShowDatePicker(false)}
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
           </div>
           
-          <button type="submit" className="search-button">Search</button>
+          <button 
+            type="button" 
+            className="filter-toggle-btn"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+          >
+            <Filter size={18} />
+            <span>Filters</span>
+          </button>
           
-          {(searchTerm || checkInDate || checkOutDate || filter !== "all") && (
-            <button type="button" className="clear-filters-button" onClick={clearFilters}>
-              <X size={16} />
-              Clear Filters
-            </button>
-          )}
+          <button type="submit" className="search-button">
+            <Search size={18} />
+            <span>Search</span>
+          </button>
         </form>
       </div>
       
       <div className="hostels-container">
-        <div className="filters-container">
-          <button 
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`} 
-            onClick={() => setFilter('all')}
-          >
-            All Hostels
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'boys' ? 'active' : ''}`} 
-            onClick={() => setFilter('boys')}
-          >
-            Boys Only
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'girls' ? 'active' : ''}`} 
-            onClick={() => setFilter('girls')}
-          >
-            Girls Only
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading available hostels...</p>
-          </div>
-        ) : filteredHostels.length === 0 ? (
-          <div className="no-results">
-            <p>No hostels found matching your criteria</p>
-            <button className="reset-search-btn" onClick={clearFilters}>
-              Reset Filters
+        <div className={`filters-sidebar ${showMobileFilters ? 'show' : ''}`} ref={filterPanelRef}>
+          <div className="filter-header">
+            <h3>Filters</h3>
+            <button 
+              type="button" 
+              className="close-filters-btn"
+              onClick={() => setShowMobileFilters(false)}
+            >
+              <X size={20} />
             </button>
           </div>
-        ) : (
-          <>
-            <p className="results-count">{filteredHostels.length} hostel{filteredHostels.length !== 1 ? 's' : ''} found</p>
+          
+          <div className="filter-section">
+            <h4>Hostel Type</h4>
+            <div className="filter-options">
+              <button 
+                className={`filter-option ${filter === 'all' ? 'active' : ''}`} 
+                onClick={() => setFilter('all')}
+              >
+                All Hostels
+              </button>
+              <button 
+                className={`filter-option ${filter === 'boys' ? 'active' : ''}`} 
+                onClick={() => setFilter('boys')}
+              >
+                Boys Only
+              </button>
+              <button 
+                className={`filter-option ${filter === 'girls' ? 'active' : ''}`} 
+                onClick={() => setFilter('girls')}
+              >
+                Girls Only
+              </button>
+            </div>
+          </div>
+          
+          <div className="filter-section">
+            <h4>Price Range</h4>
+            <div className="price-slider-container">
+              <div className="price-range-labels">
+                <span>{priceRange[0].toLocaleString()}</span>
+                <span>{priceRange[1].toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="20000"
+                step="1000"
+                value={priceRange[0]}
+                onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                className="price-slider"
+              />
+              <input
+                type="range"
+                min="0"
+                max="20000" 
+                step="1000"
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                className="price-slider"
+              />
+            </div>
+          </div>
+          
+          <div className="filter-section">
+            <h4>Sort By</h4>
+            <div className="sort-options">
+              <button 
+                className={`sort-option ${sortBy === 'recommended' ? 'active' : ''}`}
+                onClick={() => setSortBy('recommended')}
+              >
+                Recommended
+              </button>
+              <button 
+                className={`sort-option ${sortBy === 'price-low' ? 'active' : ''}`}
+                onClick={() => setSortBy('price-low')}
+              >
+                Price (Low to High)
+              </button>
+              <button 
+                className={`sort-option ${sortBy === 'price-high' ? 'active' : ''}`}
+                onClick={() => setSortBy('price-high')}
+              >
+                Price (High to Low)
+              </button>
+              <button 
+                className={`sort-option ${sortBy === 'rating' ? 'active' : ''}`}
+                onClick={() => setSortBy('rating')}
+              >
+                Rating (High to Low)
+              </button>
+            </div>
+          </div>
+          
+          {(searchTerm || checkInDate || checkOutDate || filter !== "all" || sortBy !== "recommended" || priceRange[0] > 0 || priceRange[1] < 20000) && (
+            <button type="button" className="clear-all-filters-btn" onClick={clearFilters}>
+              <X size={16} />
+              Clear All Filters
+            </button>
+          )}
+        </div>
+        
+        <div className="hostel-results">
+          <div className="results-header">
+            <div className="active-filters">
+              {filter !== "all" && (
+                <span className="active-filter-tag">
+                  {filter === "boys" ? "Boys Hostel" : "Girls Hostel"}
+                  <button onClick={() => setFilter("all")} className="remove-filter">
+                    <X size={14} />
+                  </button>
+                </span>  
+              )}
+              
+              {checkInDate && checkOutDate && (
+                <span className="active-filter-tag">
+                  {new Date(checkInDate).toLocaleDateString()} - {new Date(checkOutDate).toLocaleDateString()}
+                  <button 
+                    onClick={() => {
+                      setCheckInDate("");
+                      setCheckOutDate("");
+                    }} 
+                    className="remove-filter"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+              
+              {(priceRange[0] > 0 || priceRange[1] < 20000) && (
+                <span className="active-filter-tag">
+                  ₹{priceRange[0].toLocaleString()} - ₹{priceRange[1].toLocaleString()}
+                  <button 
+                    onClick={() => setPriceRange([0, 20000])} 
+                    className="remove-filter"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+              
+              {sortBy !== "recommended" && (
+                <span className="active-filter-tag">
+                  {sortBy === "price-low" 
+                    ? "Price: Low to High" 
+                    : sortBy === "price-high" 
+                      ? "Price: High to Low" 
+                      : "Highest Rated"}
+                  <button 
+                    onClick={() => setSortBy("recommended")} 
+                    className="remove-filter"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+            </div>
+            
+            {loading ? (
+              <div className="skeleton-results-count"></div>
+            ) : (
+              <p className="results-count">
+                <strong>{filteredHostels.length}</strong> hostel{filteredHostels.length !== 1 ? 's' : ''} found
+              </p>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="hostel-grid">
+              {[...Array(6)].map((_, index) => (
+                <div className="hostel-card skeleton" key={`skeleton-${index}`}>
+                  <div className="skeleton-image"></div>
+                  <div className="skeleton-details">
+                    <div className="skeleton-title"></div>
+                    <div className="skeleton-location"></div>
+                    <div className="skeleton-owner"></div>
+                    <div className="skeleton-amenities"></div>
+                    <div className="skeleton-footer">
+                      <div className="skeleton-price"></div>
+                      <div className="skeleton-vacancy"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredHostels.length === 0 ? (
+            <div className="no-results">
+              <div className="no-results-icon">🏠</div>
+              <h3>No hostels found matching your criteria</h3>
+              <p>Try adjusting your filters for more results</p>
+              <button className="reset-search-btn" onClick={clearFilters}>
+                Reset All Filters
+              </button>
+            </div>
+          ) : (
             <div className="hostel-grid">
               {filteredHostels.map((hostel) => (
                 <div key={hostel.id} className="hostel-card">
@@ -248,9 +478,17 @@ const Hostels = () => {
                         alt={hostel.name}
                         className="hostel-image"
                       />
-                      {hostel.is_featured && <span className="featured-badge">Featured</span>}
+                      {hostel.is_featured && (
+                        <span className="featured-badge">
+                          <Star size={12} />
+                          Featured
+                        </span>
+                      )}
                       {checkInDate && checkOutDate && hostel.has_vacancy && (
-                        <span className="available-badge">Available</span>
+                        <span className="available-badge">
+                          <Clock size={12} />
+                          Available
+                        </span>
                       )}
                     </div>
                     
@@ -273,7 +511,10 @@ const Hostels = () => {
                       {renderAmenities(hostel)}
                       
                       <div className="hostel-footer">
-                        <span className="hostel-price">₹{hostel.price || "5,000"}<span className="price-period">/month</span></span>
+                        <span className="hostel-price">
+                          {formatPrice(hostel.price)}
+                          <span className="price-period">/month</span>
+                        </span>
                         <span className={`vacancy-status ${hostel.has_vacancy ? 'available' : 'full'}`}>
                           {hostel.has_vacancy ? "Vacancies Available" : "Full"}
                         </span>
@@ -283,12 +524,15 @@ const Hostels = () => {
                 </div>
               ))}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
+      
+      {showMobileFilters && (
+        <div className="filters-overlay" onClick={() => setShowMobileFilters(false)}></div>
+      )}
     </div>
   );
 };
 
 export default Hostels;
-

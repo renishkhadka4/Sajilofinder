@@ -142,6 +142,30 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         feedback.delete()
         return Response({"message": "Reply deleted"}, status=status.HTTP_204_NO_CONTENT)
 
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import ChatMessage  # assuming image is saved in this model
+from .serializers import ChatImageSerializer  # or you can create one
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_conversation(request, hostel_id):
+    student_id = request.query_params.get('student_id')
+    owner = request.user
+
+    if not student_id:
+        return Response({"error": "Student ID required"}, status=400)
+
+    ChatMessage.objects.filter(
+        hostel_id=hostel_id,
+        sender__id__in=[owner.id, student_id],
+        receiver__id__in=[owner.id, student_id],
+    ).delete()
+
+    return Response({"success": "Conversation deleted"}, status=200)
 
 
 class HostelViewSet(viewsets.ModelViewSet):

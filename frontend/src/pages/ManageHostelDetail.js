@@ -4,6 +4,18 @@ import api from '../api/axios';
 import Sidebar from '../pages/Sidebar';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import '../styles/ManageHostelDetail.css';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import markerIconPng from "leaflet/dist/images/marker-icon.png";
+import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
+import L from 'leaflet';
+// Fix for missing marker icon in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIconPng,
+  shadowUrl: markerShadowPng,
+});
+
 
 const ManageHostelDetail = () => {
     const { id } = useParams();
@@ -16,6 +28,24 @@ const ManageHostelDetail = () => {
     useEffect(() => {
         fetchHostelDetails();
     }, []);
+    useEffect(() => {
+        if (activeSection === "location") {
+          setTimeout(() => {
+            const mapElements = document.getElementsByClassName("leaflet-container");
+            if (mapElements.length > 0) {
+              mapElements[0]._leaflet_map?.invalidateSize(); // If available
+              window.dispatchEvent(new Event("resize")); // Backup fallback
+            }
+          }, 400);
+        }
+      }, [activeSection]);
+      
+    useEffect(() => {
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 300);
+      }, []);
+      
 
     const fetchHostelDetails = async () => {
         try {
@@ -164,7 +194,30 @@ const ManageHostelDetail = () => {
             </div>
         );
     }
-
+    const markerIcon = new L.Icon({
+        iconUrl: markerIconPng,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+      });
+      
+      const LocationMarker = ({ formData, setFormData }) => {
+        useMapEvents({
+          click(e) {
+            const { lat, lng } = e.latlng;
+            setFormData((prev) => ({
+              ...prev,
+              latitude: lat,
+              longitude: lng,
+              google_maps_link: `https://www.google.com/maps?q=${lat},${lng}`
+            }));
+          }
+        });
+      
+        return formData?.latitude && formData?.longitude ? (
+          <Marker position={[formData.latitude, formData.longitude]} icon={markerIcon} />
+        ) : null;
+      };
+      
     return (
         <div className="dashboard-layout manage-hostel-detail">
 
@@ -346,6 +399,28 @@ const ManageHostelDetail = () => {
                                         placeholder="Google Maps URL"
                                     />
                                 </div>
+                                <div className="form-alin">
+  <label>Pick Location on Map</label>
+ <MapContainer
+  center={
+    formData.latitude && formData.longitude
+      ? [formData.latitude, formData.longitude]
+      : [27.7172, 85.3240]
+  }
+
+  zoom={13}
+  scrollWheelZoom={true}
+  style={{ height: "300px", width: "100%", borderRadius: "8px" }}
+>
+
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution="&copy; OpenStreetMap contributors"
+    />
+    <LocationMarker formData={formData} setFormData={setFormData} />
+  </MapContainer>
+</div>
+
                                 
                                 <div className="form-group">
                                     <label>Nearby Colleges</label>

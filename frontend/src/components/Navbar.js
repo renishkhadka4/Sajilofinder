@@ -98,6 +98,7 @@ const Navbar = () => {
         <li><Link to="/contact">Contacts</Link></li>
         <li><Link to="/Student_community">Community</Link></li>
         <li><Link to="/hostels">Hostels</Link></li>
+        <li><Link to="/student/chat">Messanger</Link></li>
       </ul>
 
       <div className="nav-actions">
@@ -139,11 +140,15 @@ const Navbar = () => {
                 {user.username} ⬇
               </button>
               {dropdownOpen && (
-                <div className="dropdown-menu">
-                  <Link to="/profile">Edit Profile</Link>
-                  <button onClick={handleLogout}>Logout</button>
-                </div>
-              )}
+  <div className="dropdown-menu">
+    <Link to="/student/profile">Edit Profile</Link>
+    <Link to="/student/change-password">Reset Password</Link>
+    <Link to="/forgot-password">Forgot Password</Link>
+    <Link to="/my-bookings">My Bookings</Link>
+    <button onClick={handleLogout}>Logout</button>
+  </div>
+)}
+
             </div>
           </>
         ) : (

@@ -265,9 +265,20 @@ const HostelDetailsPage = () => {
             ← Back to Hostels
           </button>
           <div className="header-actions">
-            <button onClick={() => navigate(`/manage-hostels/${hostel.id}`)}>✏️ Edit</button>
-            <button onClick={() => navigate(`/manage-rooms/${hostel.id}`)}>🏠 Manage Rooms</button>
-          </div>
+  <button
+    onClick={() => navigate(`/manage-hostels/${hostel.id}`)}
+    style={{ color: '#000' }} // 👈 Add this
+  >
+    ✏️ Edit
+  </button>
+  <button
+    onClick={() => navigate(`/manage-rooms/${hostel.id}`)}
+    style={{ color: '#000' }} // 👈 And here
+  >
+    🏠 Manage Rooms
+  </button>
+</div>
+
         </div>
         
         <div className="hostel-details-container">

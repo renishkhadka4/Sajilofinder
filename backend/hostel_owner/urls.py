@@ -10,7 +10,7 @@ from .views import (
 
 from .views import delete_message
 from .views import get_all_hostel_students
-from .views import get_students_with_hostels
+from .views import get_students_with_hostels,delete_conversation
 # Set up the router to handle common ViewSets
 router = DefaultRouter()
 router.register(r'hostels', HostelViewSet)
@@ -47,6 +47,10 @@ urlpatterns = [
     path("verified-hostels/", get_all_verified_hostels, name="verified-hostels"),
     path('students/', get_all_hostel_students, name='hostel_students'),
     path("chat-students/", get_students_with_hostels),
+    path('delete-conversation/<int:hostel_id>/', delete_conversation),
+
+   
+
 
       # ✅ Updated path for list students
 ]

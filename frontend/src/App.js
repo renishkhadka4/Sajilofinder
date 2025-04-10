@@ -46,6 +46,8 @@ import BlogList from "./pages/BLogList";
 import BlogDetail from "./pages/BlogDetail";
 import ContactUs from "./pages/ContactUs";
 import StudentCommunity from "./pages/StudentCommunity";
+import StudentProfile from "./pages/StudentProfile";
+import StudentChangePassword from "./pages/StudentChangePassword";
 // Protect routes based on user roles
 const ProtectedRoute = ({ role, children }) => {
   const userRole = localStorage.getItem('role');
@@ -94,7 +96,8 @@ function App() {
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/Student_community" element={<StudentCommunity />} />
-
+        <Route path="/student/profile" element={<StudentProfile />} />
+        <Route path="/student/change-password" element={<StudentChangePassword />} />
  
 
 <Route path="/admin/about-us" element={<AdminAboutUs />} />

@@ -1,10 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "../styles/footer.css";// Make sure to import the CSS file
+import "../styles/Footer.css";
 
 const Footer = () => {
   return (
     <footer className="footer">
+      <div className="footer-slogan">
+        <h2>Your Home Search Made Simple, Your Journey Made Sajilo</h2>
+      </div>
+      
       <div className="footer-container">
         {/* Sajilo Finder */}
         <div className="footer-section">
@@ -12,8 +16,6 @@ const Footer = () => {
           <ul>
             <li><Link to="/about">About Us</Link></li>
             <li><Link to="/contact">Contact Us</Link></li>
-            <li><Link to="/careers">Careers</Link></li>
-            <li><Link to="/press">Press</Link></li>
           </ul>
         </div>
 
@@ -23,19 +25,18 @@ const Footer = () => {
           <ul>
             <li><Link to="/how-it-works">How It Works</Link></li>
             <li><Link to="/faq">FAQs</Link></li>
-            <li><Link to="/support">Support</Link></li>
             <li><Link to="/blog">Blog</Link></li>
+            <li><Link to="/register">List Your Property</Link></li>
           </ul>
         </div>
 
-        {/* For Hostel Owners */}
+        {/* Contact Information */}
         <div className="footer-section">
-          <h3>For Hostel Owners</h3>
+          <h3>Contact Us</h3>
           <ul>
-            <li><Link to="/list-property">List Your Property</Link></li>
-            <li><Link to="/owner-faq">Owner FAQs</Link></li>
-            <li><Link to="/owner-support">Owner Support</Link></li>
-            <li><Link to="/owner-resources">Resources</Link></li>
+            <li><i className="fa fa-envelope"></i> sajilofinder@gmail.com</li>
+            <li><i className="fa fa-phone"></i> +977 9869274750</li>
+            <li><i className="fa fa-map-marker"></i> Putali Sadak, Kathmandu</li>
           </ul>
         </div>
 
@@ -43,10 +44,10 @@ const Footer = () => {
         <div className="footer-section">
           <h3>Follow Us</h3>
           <div className="social-links">
-            <a href="#">FB</a>
-            <a href="#">IG</a>
-            <a href="#">TW</a>
-            <a href="#">LI</a>
+            <a href="#" aria-label="Facebook"><i className="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i className="fa fa-instagram"></i></a>
+            <a href="#" aria-label="Twitter"><i className="fa fa-twitter"></i></a>
+            <a href="#" aria-label="LinkedIn"><i className="fa fa-linkedin"></i></a>
           </div>
         </div>
       </div>

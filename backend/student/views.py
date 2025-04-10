@@ -103,6 +103,66 @@ def student_chat_history(request, hostel_id):
 
 
 
+from rest_framework import generics, permissions
+from .serializers import StudentProfileSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class StudentProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = StudentProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user  # returns the logged-in student
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.utils.crypto import get_random_string
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+
+@api_view(["POST"])
+def request_email_change(request):
+    new_email = request.data.get("new_email")
+    if not new_email:
+        return Response({"error": "Email is required"}, status=400)
+
+    user = request.user
+    otp = get_random_string(length=6, allowed_chars='0123456789')
+    user.email = new_email
+    user.otp = otp
+    user.otp_created_at = timezone.now()
+    user.is_verified = False
+    user.save()
+
+    send_mail(
+        "Verify Your New Email",
+        f"Your OTP is {otp}. It will expire in 5 minutes.",
+        settings.EMAIL_HOST_USER,
+        [new_email],
+        fail_silently=False
+    )
+
+    return Response({"message": "OTP sent to new email"}, status=200)
+
+
+@api_view(["POST"])
+def verify_email_change(request):
+    otp = request.data.get("otp")
+    user = request.user
+
+    if not otp or otp != user.otp:
+        return Response({"error": "Invalid or expired OTP"}, status=400)
+
+    user.otp = ""
+    user.otp_created_at = None
+    user.is_verified = True
+    user.save()
+
+    return Response({"message": "Email verified successfully!"}, status=200)
+
 
 from rest_framework import viewsets
 from hostel_owner.models import Booking

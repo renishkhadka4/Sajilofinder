@@ -132,3 +132,10 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = "__all__"
 
+from rest_framework import serializers
+from .models import ChatMessage
+
+class ChatImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ['image']
