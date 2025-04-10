@@ -1,0 +1,52 @@
+.about-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 16px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .about-title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #1a202c;
+  }
+  
+  .about-description {
+    font-size: 18px;
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  
+  .about-subtitle {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #2d3748;
+  }
+  
+  .about-services {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 32px;
+  }
+  
+  .about-services li {
+    margin-bottom: 6px;
+    color: #2d3748;
+  }
+  
+  .about-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .about-img {
+    width: calc(50% - 8px);
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  

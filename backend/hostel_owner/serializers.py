@@ -97,7 +97,17 @@ class FeedbackSerializer(serializers.ModelSerializer):
        
         replies = obj.replies.all().order_by("created_at")
         return FeedbackSerializer(replies, many=True).data
+    
+from .models import ChatMessage
 
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.CharField(source='sender.username')
+    receiver = serializers.CharField(source='receiver.username')
+    hostel_name = serializers.CharField(source='hostel.name', read_only=True)  # 👈 Add this
+
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'sender', 'receiver', 'message', 'image_url', 'timestamp', 'hostel_name']
 
 
     

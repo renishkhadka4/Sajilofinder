@@ -37,6 +37,8 @@ urlpatterns = [
     path('chat-history/<int:hostel_id>/', student_chat_history),
     path('profile/', student_profile),
     path('get-owner/<int:hostel_id>/', get_hostel_owner_by_hostel),
+    
+    
 
 
 

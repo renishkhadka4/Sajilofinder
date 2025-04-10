@@ -245,6 +245,22 @@ class HostelViewSet(viewsets.ModelViewSet):
                 continue
 
         return Response({"message": "Image order updated successfully."}, status=200)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+
+class ChatImageUploadView(APIView):
+    parser_classes = [MultiPartParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        image = request.FILES.get("image")
+        if not image:
+            return Response({"error": "No image provided"}, status=400)
+
+        instance = ChatMessage.objects.create(sender=request.user, message="[Image]", image=image)
+        return Response({"image_url": instance.image.url})
 
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -395,6 +411,22 @@ def get_current_user(request):
         "first_name": user.first_name,
         "last_name": user.last_name,
     })
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Hostel
+from .serializers import HostelSerializer
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_verified_hostels(request):
+    try:
+        hostels = Hostel.objects.filter(is_verified=True)
+        serializer = HostelSerializer(hostels, many=True, context={"request": request})
+        return Response(serializer.data)
+    except Exception as e:
+        print("❌ Error fetching hostels:", str(e))
+        return Response({"error": str(e)}, status=500)
 
 
 
@@ -922,6 +954,63 @@ class ChatHistoryView(APIView):
         ]
 
         return Response(chat_data)
+
+# hostel_owner/views.py
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from .models import ChatMessage
+from api.models import CustomUser
+# ✅ Correct:
+from api.serializers import CustomUserSerializer
+from .serializers import HostelSerializer
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from api.serializers import CustomUserSerializer
+from .serializers import HostelSerializer
+from hostel_owner.models import ChatMessage, Hostel
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+from hostel_owner.models import ChatMessage, Hostel
+from api.models import CustomUser
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+# views.py (in hostel_owner app)
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import ChatMessage, Hostel
+from api.models import CustomUser
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_students_with_hostels(request):
+    owner = request.user
+    messages = ChatMessage.objects.filter(hostel__owner=owner).select_related('sender', 'hostel')
+
+    student_data = {}
+    for msg in messages:
+        student = msg.sender
+        if student.role == 'Student':
+            key = (student.id, msg.hostel.id)
+            if key not in student_data:
+                student_data[key] = {
+                    "student_id": student.id,
+                    "username": student.username,
+                    "hostel_id": msg.hostel.id,
+                    "hostel_name": msg.hostel.name,
+                }
+
+    return Response(list(student_data.values()))
+
+
 
 
 

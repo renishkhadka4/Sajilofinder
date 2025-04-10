@@ -23,7 +23,7 @@ from .views import (
     user_distribution_data,
     feedback_rating_data,
 )
-from .views import SendAdminNotificationView
+from .views import SendAdminNotificationView,PublicAboutUsAPIView,PublicBlogDetailAPIView,PublicBlogListAPIView
 router = DefaultRouter()
 router.register('reports', UserReportViewSet)
 router.register(r'all-users', UserViewSet, basename='admin-users')
@@ -61,5 +61,11 @@ urlpatterns = [
     path('dashboard/user-distribution/', user_distribution_data),
     path('dashboard/feedback-ratings/', feedback_rating_data),
     path('send-notification/', SendAdminNotificationView.as_view(), name='admin-send-notification'),
+    path('public/blogs/', PublicBlogListAPIView.as_view(), name='public-blog-list'),
+    path('public/blogs/<int:id>/', PublicBlogDetailAPIView.as_view(), name='public-blog-detail'),
+    # public routes
+    path('public/about/', PublicAboutUsAPIView.as_view(), name='public-about'),
+
+
 ]
 

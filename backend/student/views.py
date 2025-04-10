@@ -64,7 +64,42 @@ class BookHostelView(APIView):
 
 
 
+# views.py (in student app)
+# student/views.py
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from hostel_owner.models import ChatMessage
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_chat_history(request, hostel_id):
+    user = request.user
+
+    # Make sure this is a student user
+    if user.role != 'Student':
+        return Response({"error": "Forbidden"}, status=403)
+
+    # Return only messages where the student is involved
+    messages = ChatMessage.objects.filter(
+        hostel_id=hostel_id
+    ).filter(
+        models.Q(sender=user) | models.Q(receiver=user)
+    ).order_by("timestamp")
+
+    chat_data = [
+        {
+            "sender": msg.sender.username,
+            "receiver": msg.receiver.username,
+            "message": msg.message,
+            "image_url": msg.image.url if msg.image else None,
+            "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for msg in messages
+    ]
+
+    return Response(chat_data)
 
 
 

@@ -5,10 +5,12 @@ from .views import (
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
     FloorViewSet, get_current_user, HostelOwnerProfileView, get_all_hostel_students, DownloadReportView, 
     ChatHistoryView, OwnerNotificationListView, delete_notification, mark_notification_as_read, 
-    mark_all_notifications_as_read, list_students
+    mark_all_notifications_as_read, list_students,get_all_verified_hostels
 )
 
 from .views import delete_message
+from .views import get_all_hostel_students
+from .views import get_students_with_hostels
 # Set up the router to handle common ViewSets
 router = DefaultRouter()
 router.register(r'hostels', HostelViewSet)
@@ -42,6 +44,10 @@ urlpatterns = [
     # List students endpoint
     path('students/list/', list_students, name="list_students"), 
     path('delete-message/<int:message_id>/', delete_message, name='delete_message'),
+    path("verified-hostels/", get_all_verified_hostels, name="verified-hostels"),
+    path('students/', get_all_hostel_students, name='hostel_students'),
+    path("chat-students/", get_students_with_hostels),
+
       # ✅ Updated path for list students
 ]
 

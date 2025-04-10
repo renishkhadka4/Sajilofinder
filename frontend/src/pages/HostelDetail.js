@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/HostelDetail.css";
 import Navbar from "../components/Navbar";
+import StudentMessenger from "../pages/StudentMessenger";
 
 
 const HostelDetail = () => {
@@ -21,6 +22,8 @@ const HostelDetail = () => {
   const [editMode, setEditMode] = useState(null);
   const [editReplyMode, setEditReplyMode] = useState(null);
   const [editInputs, setEditInputs] = useState({});
+  const [showChat, setShowChat] = useState(false);
+
   
   useEffect(() => {
     const fetchAll = async () => {
@@ -265,8 +268,16 @@ const HostelDetail = () => {
       }
     });
   });
+ 
 
-
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setShowChat(false);
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, []);
+  
 
   const amenities = [
     { key: "wifi", label: "WiFi" },
@@ -408,6 +419,9 @@ const HostelDetail = () => {
         ))}
       </select>
       <button onClick={handleSubmitFeedback}>Submit Feedback</button>
+      {/* Floating Chat Button */}
+
+
     </div>
   )}
 
@@ -500,6 +514,37 @@ const HostelDetail = () => {
           ))}
         </div>
       </div>
+      {hostel?.id && (
+  <>
+    {/* Floating Chat Button */}
+    <button 
+  className="floating-chat-button" 
+  onClick={() => {
+    console.log("Clicked chat button ✅");
+    setShowChat(true);
+  }}
+>
+  💬 Chat
+</button>
+
+
+  
+{hostel && hostel.id && showChat && (
+    <div className="chat-popup">
+        <div className="chat-popup-header">
+            <span>Chat with Hostel Owner</span>
+            <button onClick={() => setShowChat(false)}>❌</button>
+        </div>
+        <StudentMessenger selectedHostelId={hostel.id} />
+        {/* Correct passing of hostelId */}
+    </div>
+)}
+
+  </>
+)}
+
+
+          
     </div>
   );
 };

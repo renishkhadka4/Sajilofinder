@@ -95,8 +95,8 @@ const Navbar = () => {
         <li><Link to="/">Home</Link></li>
         <li><Link to="/blog">Blog</Link></li>
         <li><Link to="/about">About Us</Link></li>
-        <li><Link to="/contacts">Contacts</Link></li>
-        <li><Link to="/community">Community</Link></li>
+        <li><Link to="/contact">Contacts</Link></li>
+        <li><Link to="/Student_community">Community</Link></li>
         <li><Link to="/hostels">Hostels</Link></li>
       </ul>
 

@@ -183,10 +183,19 @@ from .models import ContactMessage
 from .serializers import ContactMessageSerializer
 from .permissions import IsCustomAdmin
 
+from rest_framework import viewsets, permissions
+from .models import ContactMessage
+from .serializers import ContactMessageSerializer
+
 class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset = ContactMessage.objects.all().order_by('-created_at')
     serializer_class = ContactMessageSerializer
-    permission_classes = [IsCustomAdmin]
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.AllowAny()]  # ✅ anyone can submit
+        return [permissions.IsAuthenticated()]  # 🔒 only admins can view
+
 
 
 from rest_framework.views import APIView
@@ -534,3 +543,26 @@ class SendAdminNotificationView(APIView):
                 total += 1
 
         return Response({"message": f"Notification sent to {total} users."})
+
+
+
+# Public GET for blogs (no auth)
+from rest_framework import generics
+from .models import Blog, AboutUs
+from .serializers import BlogSerializer, AboutUsSerializer
+
+class PublicBlogListAPIView(generics.ListAPIView):
+    queryset = Blog.objects.all().order_by('-created_at')
+    serializer_class = BlogSerializer
+
+class PublicBlogDetailAPIView(generics.RetrieveAPIView):
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+    lookup_field = 'id'
+
+class PublicAboutUsAPIView(generics.RetrieveAPIView):
+    queryset = AboutUs.objects.all()
+    serializer_class = AboutUsSerializer
+
+    def get_object(self):
+        return AboutUs.objects.first()

@@ -1,3 +1,4 @@
+# backend/asgi.py
 import os
 import django
 
@@ -12,11 +13,12 @@ from hostel_owner.consumers import ChatConsumer
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(  # ✅ Add this
+    "websocket": AuthMiddlewareStack(
         URLRouter([
-            re_path(r"ws/chat/(?P<hostel_id>\d+)/$", ChatConsumer.as_asgi()),
+            re_path(r"ws/chat/(?P<hostel_id>\d+)/$", ChatConsumer.as_asgi()),  # Match the WebSocket route
+
+
+            re_path(r"ws/owner-chat/(?P<owner_id>\d+)/$", ChatConsumer.as_asgi()),  # ✅ New route
         ])
     ),
 })
-
-
