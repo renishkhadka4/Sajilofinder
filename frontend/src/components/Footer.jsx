@@ -6,7 +6,7 @@ const Footer = () => {
   return (
     <footer className="footer">
       <div className="footer-slogan">
-        <h2>Your Home Search Made Simple, Your Journey Made Sajilo</h2>
+        <h2>Your Hostels Search Made Simple, Your Journey Made Sajilo</h2>
       </div>
       
       <div className="footer-container">
@@ -21,12 +21,14 @@ const Footer = () => {
 
         {/* For Students */}
         <div className="footer-section">
-          <h3>For Students</h3>
+          <h3>For Tenant & Owners
+          </h3>
           <ul>
             <li><Link to="/how-it-works">How It Works</Link></li>
-            <li><Link to="/faq">FAQs</Link></li>
+            <li><Link to="/faqs">FAQs</Link></li>
             <li><Link to="/blog">Blog</Link></li>
             <li><Link to="/register">List Your Property</Link></li>
+            <li><Link to="/hostels">Book Your Hostel Here</Link></li>
           </ul>
         </div>
 
@@ -41,15 +43,7 @@ const Footer = () => {
         </div>
 
         {/* Social Media */}
-        <div className="footer-section">
-          <h3>Follow Us</h3>
-          <div className="social-links">
-            <a href="#" aria-label="Facebook"><i className="fa fa-facebook"></i></a>
-            <a href="#" aria-label="Instagram"><i className="fa fa-instagram"></i></a>
-            <a href="#" aria-label="Twitter"><i className="fa fa-twitter"></i></a>
-            <a href="#" aria-label="LinkedIn"><i className="fa fa-linkedin"></i></a>
-          </div>
-        </div>
+      
       </div>
 
       <div className="footer-bottom">

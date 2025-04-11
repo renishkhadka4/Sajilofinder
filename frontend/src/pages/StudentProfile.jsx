@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
-import "../styles/ProfileSettings.css"; // ✅ Reuse the same styles if consistent
-
+import "../styles/StudentProfile.css"; // ✅ Reuse the same styles if consistent
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 const StudentProfile = () => {
     const [user, setUser] = useState({
         username: "",
@@ -79,6 +80,7 @@ const StudentProfile = () => {
 
     return (
         <div className="profile-settings">
+              <Navbar />
             <h2>My Profile</h2>
             {loading ? (
                 <p>Loading...</p>
@@ -138,6 +140,7 @@ const StudentProfile = () => {
                     {error && <p className="error-message">{error}</p>}
                 </form>
             )}
+            <Footer />
         </div>
     );
 };

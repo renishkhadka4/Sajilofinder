@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import "../styles/BookingDetails.css";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
+import Footer from "../components/Footer";
 const StudentBookingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -158,6 +158,7 @@ const StudentBookingDetail = () => {
           </button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

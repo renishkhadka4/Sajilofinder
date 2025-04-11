@@ -3,7 +3,7 @@ import api from "../api/axios";
 import { useParams } from "react-router-dom";
 import "../styles/B;ogDetails.css";
 import Navbar from "../components/Navbar";
-
+import Footer from "../components/Footer";
 const BlogDetail = () => {
   const { id } = useParams();
   const [blog, setBlog] = useState(null);
@@ -28,7 +28,9 @@ const BlogDetail = () => {
         <h1 className="blog-title">{blog.title}</h1>
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: blog.content }} />
       </div>
+      <Footer />
     </>
+    
   );
 };
 

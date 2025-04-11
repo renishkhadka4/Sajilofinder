@@ -33,6 +33,7 @@ class Hostel(models.Model):
     alcohol_allowed = models.BooleanField(default=False)
     pets_allowed = models.BooleanField(default=False)
     visiting_hours = models.CharField(max_length=100, blank=True, null=True)
+
     nearby_colleges = models.TextField(blank=True, null=True)
     nearby_markets = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -417,7 +417,9 @@ const HostelDetailsPage = () => {
               <div className="details-section">
                 <h2>Contact Information</h2>
                 <ul className="details-list">
-                  <li><strong>Phone:</strong> {hostel.phone || 'N/A'}</li>
+                <li><strong>Phone:</strong> {hostel.contact_number || 'N/A'}</li>
+
+
                   <li><strong>Email:</strong> {hostel.email || 'N/A'}</li>
                   <li><strong>Established:</strong> {hostel.established_year || 'N/A'}</li>
                 </ul>

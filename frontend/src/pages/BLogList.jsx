@@ -3,6 +3,7 @@ import api from "../api/axios";
 import { Link } from "react-router-dom";
 import "../styles/Blog.css";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
@@ -65,6 +66,7 @@ const BlogList = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };

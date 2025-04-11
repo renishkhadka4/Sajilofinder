@@ -13,6 +13,7 @@ const Register = () => {
   });
 
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false); // Add loading state
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -28,6 +29,8 @@ const Register = () => {
       return;
     }
 
+    setLoading(true); // Set loading to true when form is submitted
+    
     try {
       const response = await fetch('http://127.0.0.1:8000/api/register/', {
         method: 'POST',
@@ -55,6 +58,8 @@ const Register = () => {
     } catch (error) {
       console.error('Network Error:', error);
       setMessage('Error connecting to the server.');
+    } finally {
+      setLoading(false); // Set loading to false regardless of outcome
     }
   };
 
@@ -64,32 +69,110 @@ const Register = () => {
         <img src={registerImage} alt="Hostel" />
       </div>
       <div className="register-form">
-        <h2>Create an account</h2>
-        <p>Let's get started with your 30 days free trial</p>
+        <div className="register-form-wrapper">
+          <h2>Create an account</h2>
+          <p className="subtitle">Let's get started with your 30 days free trial</p>
 
-        {message && <p className={message.includes('successful') ? 'success' : 'error'}>{message}</p>}
+          {message && (
+            <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
+              <span className="message-icon">
+                {message.includes('successful') ? '✓' : '!'} 
+              </span>
+              <span>{message}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} required />
-          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-          <input type="password" name="password2" placeholder="Confirm Password" value={formData.password2} onChange={handleChange} required />
-          <select name="role" value={formData.role} onChange={handleChange} required>
-            <option value="">Select Role</option>
-            <option value="Student">Student</option>
-            <option value="HostelOwner">Hostel Owner</option>
-          </select>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                placeholder="Enter your name"
+                value={formData.name}
+                onChange={handleChange}
+                className="form-control"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="example@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                className="form-control"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-control"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password2">Confirm Password</label>
+              <input
+                id="password2"
+                type="password"
+                name="password2"
+                placeholder="••••••••"
+                value={formData.password2}
+                onChange={handleChange}
+                className="form-control"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="role">Select Role</label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="form-control"
+                required
+              >
+                <option value="">Select Role</option>
+                <option value="Student">Student</option>
+                <option value="HostelOwner">Hostel Owner</option>
+              </select>
+            </div>
 
-          <button type="submit">Create Account</button>
-        </form>
+            <button type="submit" className="btn btn-primary">
+              {loading && <span className="spinner"></span>}
+              {loading ? 'Processing...' : 'Create Account'}
+            </button>
+          </form>
 
-        <div className="google-signup">
-          <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
-          <span>Sign up with Google</span>
-        </div>
+          <div className="divider">
+            <span className="divider-text">or</span>
+          </div>
 
-        <div className="login-link">
-          Already have an account? <a href="/login">Sign in</a>
+          <button type="button" className="google-signup">
+            <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
+            <span>Sign up with Google</span>
+          </button>
+
+          <div className="login-link">
+            Already have an account? <a href="/login">Sign in</a>
+          </div>
         </div>
       </div>
     </div>

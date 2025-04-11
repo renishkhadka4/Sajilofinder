@@ -53,22 +53,23 @@ if (match) {
 
         if (match) {
           setExistingBooking(match);
-          setBookingId(match.id);
+          
         }
 
         const allBookingRes = await api.get("/hostel_owner/bookings/");
-        const bookingsForRoom = allBookingRes.data.filter(
-          (b) => b.room.id === parseInt(id) && !["rejected", "cancelled"].includes(b.status)
-        );
+const bookingsForRoom = allBookingRes.data.filter(
+  (b) => b.room.id === parseInt(id) && !["rejected", "cancelled"].includes(b.status)
+);
 
-        if (bookingsForRoom.length > 0) {
-          const isConfirmed = bookingsForRoom.some((b) => b.status === "confirmed");
-          const isPending = bookingsForRoom.some((b) => b.status === "pending");
-          if (isConfirmed) setRoomStatus("Booked");
-          else if (isPending) setRoomStatus("Pending");
-        } else {
-          setRoomStatus("Available");
-        }
+if (bookingsForRoom.length > 0) {
+  const isConfirmed = bookingsForRoom.some((b) => b.status === "confirmed");
+  const isPending = bookingsForRoom.some((b) => b.status === "pending");
+  if (isConfirmed) setRoomStatus("Booked");
+  else if (isPending) setRoomStatus("Pending");
+} else {
+  setRoomStatus("Available");
+}
+
 
         // Check if booking is rejected and prevent new bookings for a week
         if (existingBooking && existingBooking.status === "rejected") {

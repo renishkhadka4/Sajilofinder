@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/Hostels.css";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { 
   Star, 
   MapPin, 
@@ -37,7 +38,8 @@ const Hostels = () => {
     const fetchHostels = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/hostel_owner/hostels/");
+        const response = await api.get("/hostel_owner/all-hostels/");
+        console.log("Fetched hostels:", response.data.length); // Debug: Log the number of hostels fetched
         setHostels(response.data);
         setFilteredHostels(response.data);
       } catch (error) {
@@ -60,13 +62,16 @@ const Hostels = () => {
   
   useEffect(() => {
     // Apply filters whenever filter criteria change
-    let results = hostels;
+    let results = [...hostels]; // Create a copy to avoid mutating the original
+    console.log("Starting filter with", results.length, "hostels"); // Debug
     
     // Category filter
     if (filter !== "all") {
-      results = results.filter(hostel => 
-        hostel.category?.toLowerCase() === filter.toLowerCase()
-      );
+      results = results.filter(hostel => {
+        const hostelCategory = hostel.category?.toLowerCase() || "";
+        return hostelCategory === filter.toLowerCase();
+      });
+      console.log("After category filter:", results.length); // Debug
     }
     
     // Search term filter
@@ -74,36 +79,49 @@ const Hostels = () => {
       const term = searchTerm.toLowerCase();
       results = results.filter(
         hostel => 
-          hostel.name?.toLowerCase().includes(term) || 
-          hostel.address?.toLowerCase().includes(term) ||
-          hostel.owner?.toLowerCase().includes(term)
+          (hostel.name?.toLowerCase() || "").includes(term) || 
+          (hostel.address?.toLowerCase() || "").includes(term) ||
+          (hostel.owner?.toLowerCase() || "").includes(term)
       );
+      console.log("After search filter:", results.length); // Debug
     }
     
-    // Date availability filter
-    if (checkInDate && checkOutDate) {
-      results = results.filter(hostel => hostel.has_vacancy);
-    }
-    
-    // Price range filter
+    // Price range filter - Fixed to handle different price formats
     results = results.filter(hostel => {
-      const price = parseInt(hostel.price?.replace(/,/g, '') || 5000);
-      return price >= priceRange[0] && price <= priceRange[1];
+      // First, attempt to get numeric price from rent_max
+      let price = null;
+      
+      if (hostel.rent_max !== undefined && hostel.rent_max !== null) {
+        // If rent_max exists and is a number, use it
+        price = parseFloat(hostel.rent_max);
+      } else if (hostel.price) {
+        // If price exists, extract numeric value
+        const priceString = hostel.price.toString().replace(/[^\d]/g, '');
+        price = parseFloat(priceString);
+      }
+      
+      // Default to 0 if price is NaN or null
+      if (isNaN(price) || price === null) {
+        price = 0;
+      }
+      
+      return price >= priceRange[0] && (priceRange[1] === 20000 || price <= priceRange[1]);
     });
+    console.log("After price filter:", results.length); // Debug
     
     // Sort results
     switch(sortBy) {
       case "price-low":
         results.sort((a, b) => {
-          const priceA = parseInt(a.price?.replace(/,/g, '') || 5000);
-          const priceB = parseInt(b.price?.replace(/,/g, '') || 5000);
+          const priceA = getPriceValue(a);
+          const priceB = getPriceValue(b);
           return priceA - priceB;
         });
         break;
       case "price-high":
         results.sort((a, b) => {
-          const priceA = parseInt(a.price?.replace(/,/g, '') || 5000);
-          const priceB = parseInt(b.price?.replace(/,/g, '') || 5000);
+          const priceA = getPriceValue(a);
+          const priceB = getPriceValue(b);
           return priceB - priceA;
         });
         break;
@@ -115,7 +133,20 @@ const Hostels = () => {
     }
   
     setFilteredHostels(results);
+    console.log("Final filtered hostels:", results.length); // Debug
   }, [hostels, filter, searchTerm, checkInDate, checkOutDate, priceRange, sortBy]);
+
+  // Helper function to extract price value from a hostel object
+  const getPriceValue = (hostel) => {
+    if (hostel.rent_max !== undefined && hostel.rent_max !== null) {
+      return parseFloat(hostel.rent_max);
+    } else if (hostel.price) {
+      // Handle string price format (e.g., "Rs5000")
+      const priceString = hostel.price.toString().replace(/[^\d]/g, '');
+      return parseFloat(priceString) || 0;
+    }
+    return 0; // Default value
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -176,8 +207,12 @@ const Hostels = () => {
   };
   
   const formatPrice = (price) => {
-    const priceValue = price || "5,000";
-    return isNaN(parseInt(priceValue)) ? priceValue : `₹${priceValue}`;
+    if (price === undefined || price === null) return "Price on request";
+    
+    const priceValue = parseFloat(price);
+    if (isNaN(priceValue)) return price;
+    
+    return `Rs${priceValue}`;
   };
 
   return (
@@ -194,7 +229,6 @@ const Hostels = () => {
       <div className="search-container">
         <form onSubmit={handleSearch} className="search-form">
           <div className="search-input-group">
-            
             <input
               type="text"
               placeholder="Search by name, location, or owner..."
@@ -436,6 +470,9 @@ const Hostels = () => {
             ) : (
               <p className="results-count">
                 <strong>{filteredHostels.length}</strong> hostel{filteredHostels.length !== 1 ? 's' : ''} found
+                {hostels.length > filteredHostels.length && (
+                  <span> (filtered from {hostels.length})</span>
+                )}
               </p>
             )}
           </div>
@@ -475,8 +512,11 @@ const Hostels = () => {
                     <div className="hostel-image-container">
                       <img
                         src={hostel.images && hostel.images.length > 0 ? hostel.images[0].image : "/images/placeholder-hostel.jpg"}
-                        alt={hostel.name}
+                        alt={hostel.name || "Hostel Image"}
                         className="hostel-image"
+                        onError={(e) => {
+                          e.target.src = "/images/placeholder-hostel.jpg";
+                        }}
                       />
                       {hostel.is_featured && (
                         <span className="featured-badge">
@@ -494,29 +534,26 @@ const Hostels = () => {
                     
                     <div className="hostel-details">
                       <div className="hostel-header">
-                        <h3 className="hostel-name">{hostel.name}</h3>
+                        <h3 className="hostel-name">{hostel.name || "Unnamed Hostel"}</h3>
                         {renderStarRating(hostel.rating)}
                       </div>
                       
                       <div className="hostel-location">
                         <MapPin size={16} className="location-icon" />
-                        <span>{hostel.address}</span>
+                        <span>{hostel.address || "Location not specified"}</span>
                       </div>
                       
                       <div className="hostel-owner">
                         <User size={16} className="owner-icon" />
-                        <span>{hostel.owner}</span>
+                        <span>{hostel.owner || "Owner information not available"}</span>
                       </div>
                       
                       {renderAmenities(hostel)}
                       
                       <div className="hostel-footer">
                         <span className="hostel-price">
-                          {formatPrice(hostel.price)}
+                          {formatPrice(hostel.rent_max)}
                           <span className="price-period">/month</span>
-                        </span>
-                        <span className={`vacancy-status ${hostel.has_vacancy ? 'available' : 'full'}`}>
-                          {hostel.has_vacancy ? "Vacancies Available" : "Full"}
                         </span>
                       </div>
                     </div>
@@ -531,6 +568,7 @@ const Hostels = () => {
       {showMobileFilters && (
         <div className="filters-overlay" onClick={() => setShowMobileFilters(false)}></div>
       )}
+      <Footer />
     </div>
   );
 };

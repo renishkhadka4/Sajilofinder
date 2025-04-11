@@ -5,7 +5,7 @@ from .views import (
     get_confirmed_students, submit_feedback, GetHostelStudents, AvailableHostelsView,
     FloorViewSet, get_current_user, HostelOwnerProfileView, get_all_hostel_students, DownloadReportView, 
     ChatHistoryView, OwnerNotificationListView, delete_notification, mark_notification_as_read, 
-    mark_all_notifications_as_read, list_students,get_all_verified_hostels
+    mark_all_notifications_as_read, list_students,get_all_verified_hostels,get_all_hostels
 )
 
 from .views import delete_message
@@ -49,7 +49,8 @@ urlpatterns = [
     path("chat-students/", get_students_with_hostels),
     path('delete-conversation/<int:hostel_id>/', delete_conversation),
 
-   
+    path("all-hostels/", get_all_hostels),
+
 
 
       # ✅ Updated path for list students

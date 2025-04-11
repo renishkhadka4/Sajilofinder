@@ -111,7 +111,7 @@ const ManageHostelDetail = () => {
             const updatedData = new FormData();
 
             const baseFields = [
-                "name", "description", "address", "phone", "email", "city", "state",
+                "name", "description", "address", "contact_number", "email", "city", "state",
                 "zip_code", "google_maps_link", "nearby_colleges", "nearby_markets", "visiting_hours",
                 "rent_min", "rent_max", "security_deposit"
             ];
@@ -307,12 +307,13 @@ const ManageHostelDetail = () => {
                                     <div className="form-group">
                                         <label>Phone</label>
                                         <input 
-                                            type="text" 
-                                            name="phone" 
-                                            value={formData.phone || ''} 
-                                            onChange={handleChange} 
-                                            placeholder="Contact number"
-                                        />
+  type="text" 
+  name="contact_number" 
+  value={formData.contact_number || ''} 
+  onChange={handleChange} 
+  placeholder="Contact number"
+/>
+
                                     </div>
                                     
                                     <div className="form-group">

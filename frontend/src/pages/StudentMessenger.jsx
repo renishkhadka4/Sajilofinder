@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { FaPaperPlane, FaImage, FaTimes, FaBuilding, FaSpinner } from "react-icons/fa";
+import { FaPaperPlane, FaImage, FaTimes, FaBuilding, FaSpinner, FaExclamationCircle } from "react-icons/fa";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 import "../styles/StudentChat.css";
 
-const StudentMessenger = ({ selectedHostelId = null }) => {
+const StudentMessenger = ({ selectedHostelId = null, inPopup = false }) => {
   const [hostels, setHostels] = useState([]);
   const [hostelId, setHostelId] = useState(null);
   const [owner, setOwner] = useState(null);
@@ -12,15 +12,25 @@ const StudentMessenger = ({ selectedHostelId = null }) => {
   const [studentId, setStudentId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+ 
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [loading, setLoading] = useState(false);
+ 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const [loading, setLoading] = useState(false);
+  const messageInputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+
+  // Auto-resize textarea
+  const autoResizeTextarea = () => {
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = "auto";
+      messageInputRef.current.style.height = `${Math.min(messageInputRef.current.scrollHeight, 120)}px`;
+    }
+  };
 
   // Fetch current student info
   useEffect(() => {
@@ -193,6 +203,11 @@ const StudentMessenger = ({ selectedHostelId = null }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Auto-resize textarea when text changes
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [message]);
+
   // Emit typing indicator
   const emitTypingStatus = useCallback(() => {
     if (socketRef.current?.readyState === WebSocket.OPEN && owner) {
@@ -213,42 +228,8 @@ const StudentMessenger = ({ selectedHostelId = null }) => {
   };
 
   // Handle image selection
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Validate file type and size
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    
-    if (!validTypes.includes(file.type)) {
-      setError("Please select a valid image file (JPEG, PNG, GIF, WEBP)");
-      return;
-    }
-    
-    if (file.size > maxSize) {
-      setError("Image size must be less than 5MB");
-      return;
-    }
-    
-    setImage(file);
-    setError(null);
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
-    reader.onerror = () => {
-      setError("Failed to preview image");
-    };
-    reader.readAsDataURL(file);
-  };
-
+  
   // Remove selected image
-  const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
-  };
 
   // Format timestamp
   const formatMessageTime = (timestamp) => {
@@ -275,36 +256,33 @@ const StudentMessenger = ({ selectedHostelId = null }) => {
 
   // Send message
   const sendMessage = async () => {
-    if ((!message.trim() && !image) || !owner || !studentId) return;
+    if (!message.trim() || !owner || !studentId) return;
+
     
     try {
       setIsSending(true);
       setError(null);
       
-      let imageUrl = null;
+      const messageContent = message.trim();
 
-      if (image) {
-        const formData = new FormData();
-        formData.append("image", image);
-        const res = await api.post("/hostel_owner/upload-chat-image/", formData);
-        imageUrl = res.data.image_url;
-      }
-
-      const messageContent = message.trim() || (image ? "[Image]" : "");
       
       const payload = {
         sender_id: studentId,
         receiver_id: owner.id,
         message: messageContent,
-        image_url: imageUrl,
         hostel_id: hostelId
       };
 
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify(payload));
         setMessage("");
-        setImage(null);
-        setImagePreview(null);
+     
+        
+        // Focus back to input after sending
+        setTimeout(() => {
+          messageInputRef.current?.focus();
+          autoResizeTextarea();
+        }, 0);
       } else {
         throw new Error("WebSocket connection is not available");
       }
@@ -338,169 +316,188 @@ const StudentMessenger = ({ selectedHostelId = null }) => {
     return groups;
   }, {});
 
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (!error) return;
+    
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [error]);
+
   return (
-    <div className="student-chat-container">
-      <Navbar />
-      
-      <div className="chat-header">
-        <h1>Chat with Hostel Owner</h1>
-        {owner && <div className="owner-info">{owner.username}</div>}
-      </div>
+    <div className={`student-chat-container ${inPopup ? 'in-popup' : ''}`}>
+      {!inPopup && <Navbar />}
 
-      <div className="hostel-selector">
-        <label htmlFor="hostel-select">Select Hostel:</label>
-        <select
-          id="hostel-select"
-          value={hostelId || ""}
-          onChange={(e) => setHostelId(Number(e.target.value) || null)}
-          disabled={!!selectedHostelId || loading}
-        >
-          <option value="">-- Select --</option>
-          {hostels.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {error && (
-        <div className="error-message">
-          <FaTimes />
-          {error}
-        </div>
-      )}
-
-      <div className="messages-container">
-        {loading ? (
-          <div className="loading-spinner">
-            <FaSpinner className="spinner-icon" />
-            <span>Loading messages...</span>
-          </div>
-        ) : messages.length === 0 && hostelId ? (
-          <div className="empty-state">
-            <FaBuilding />
-            <h3>No messages yet</h3>
-            <p>Start a conversation with the hostel owner.</p>
-          </div>
-        ) : (
-          Object.entries(groupedMessages).map(([date, dayMessages]) => (
-            <div key={date} className="message-day-group">
-              <div className="date-divider">
-                <span>
-                  {new Date(date).toLocaleDateString([], {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </span>
+      <div className="chat-main-container">
+        {/* Fixed Header */}
+        <div className="chat-header">
+          <h1>Chat with Hostel Owner</h1>
+          {owner && (
+            <div className="owner-badge">
+              <div className="owner-avatar">
+                {owner.username?.charAt(0).toUpperCase()}
               </div>
-              
-              {dayMessages.map((msg, idx) => {
-                const isCurrentUser = msg.sender === currentUsername;
-                const showSenderInfo = idx === 0 || 
-                  dayMessages[idx - 1]?.sender !== msg.sender;
+              <div className="owner-info">
+                <span className="owner-name">{owner.username}</span>
+                <span className="owner-status online">Online</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!(inPopup && selectedHostelId) && (
+  <div className="hostel-selector">
+    <label htmlFor="hostel-select">Select Hostel:</label>
+    <select
+      id="hostel-select"
+      value={hostelId || ""}
+      onChange={(e) => setHostelId(Number(e.target.value) || null)}
+      disabled={!!selectedHostelId || loading}
+      className="hostel-select-dropdown"
+    >
+      <option value="">-- Select a hostel to chat --</option>
+      {hostels.map((h) => (
+        <option key={h.id} value={h.id}>
+          {h.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+
+        {error && (
+          <div className="error-message">
+            <FaExclamationCircle />
+            <span>{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="close-error"
+              aria-label="Dismiss error"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable Messages Area */}
+        <div className="messages-container" ref={messagesContainerRef}>
+          {loading ? (
+            <div className="loading-spinner">
+              <FaSpinner className="spinner-icon" />
+              <span>Loading messages...</span>
+            </div>
+          ) : messages.length === 0 && hostelId ? (
+            <div className="empty-state">
+              <FaBuilding className="empty-icon" />
+              <h3>No messages yet</h3>
+              <p>Start a conversation with the hostel owner.</p>
+            </div>
+          ) : (
+            Object.entries(groupedMessages).map(([date, dayMessages]) => (
+              <div key={date} className="message-day-group">
+                <div className="date-divider">
+                  <span>
+                    {new Date(date).toLocaleDateString([], {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
                 
-                return (
-                  <div
-                    key={idx}
-                    className={`message-wrapper ${
-                      isCurrentUser ? "outgoing" : "incoming"
-                    }`}
-                  >
+                {dayMessages.map((msg, idx) => {
+                  const isCurrentUser = msg.sender === currentUsername;
+                  const showSenderInfo = idx === 0 || 
+                    dayMessages[idx - 1]?.sender !== msg.sender;
+                  
+                  return (
                     <div
-                      className={`message-bubble ${
+                      key={idx}
+                      className={`message-wrapper ${
                         isCurrentUser ? "outgoing" : "incoming"
                       }`}
                     >
-                      {showSenderInfo && !isCurrentUser && (
-                        <div className="sender-name">{msg.sender}</div>
-                      )}
-                      
-                      {msg.image_url && (
-                        <img
-                          src={msg.image_url}
-                          alt="chat-img"
-                          className="message-image"
-                          loading="lazy"
-                        />
-                      )}
-                      
-                      {msg.message !== "[Image]" && <div className="message-text">{msg.message}</div>}
-                      
-                      <div className="message-time">
-                        {formatMessageTime(msg.timestamp)}
-                      </div>
-                      
-                      {msg.hostel_name && (
-                        <div className="hostel-tag">
-                          <FaBuilding size={12} />
-                          {msg.hostel_name}
+                      <div
+                        className={`message-bubble ${
+                          isCurrentUser ? "outgoing" : "incoming"
+                        }`}
+                      >
+                        {showSenderInfo && !isCurrentUser && (
+                          <div className="sender-name">{msg.sender}</div>
+                        )}
+                        
+                       
+                        {msg.message !== "[Image]" && (
+                          <div className="message-text">{msg.message}</div>
+                        )}
+                        
+                        <div className="message-time">
+                          {formatMessageTime(msg.timestamp)}
                         </div>
-                      )}
+                        
+                        {msg.hostel_name && (
+                          <div className="hostel-tag">
+                            <FaBuilding size={12} />
+                            {msg.hostel_name}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))
-        )}
+                  );
+                })}
+              </div>
+            ))
+          )}
 
-        {isTyping && owner && (
-          <div className="typing-indicator">
-            <span>{owner.username} is typing</span>
-            <div className="typing-dots">
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
+          {isTyping && owner && (
+            <div className="typing-indicator">
+              <span>{owner.username} is typing</span>
+              <div className="typing-dots">
+                <div className="typing-dot"></div>
+                <div className="typing-dot"></div>
+                <div className="typing-dot"></div>
+              </div>
             </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
 
-      {imagePreview && (
-        <div className="image-preview-container">
-          <div className="image-preview">
-            <img src={imagePreview} alt="Preview" />
-            <button onClick={removeImage} className="remove-image" aria-label="Remove image">
-              <FaTimes size={14} />
-            </button>
+        {/* Fixed Image Preview + Input Area */}
+        <div className="chat-input-section">
+         
+
+          <div className="message-input-container">
+            <textarea
+              ref={messageInputRef}
+              value={message}
+              onChange={handleMessageChange}
+              onKeyPress={handleKeyPress}
+              placeholder={owner ? `Message to ${owner.username}...` : "Select a hostel to start chatting..."}
+              className="message-input"
+              disabled={!hostelId || !owner || isSending}
+              rows={1}
+            />
+            
+            <div className="message-actions">
+             
+              
+              <button
+                onClick={sendMessage}
+                className={`send-button ${isSending ? 'sending' : ''}`}
+                disabled={!message.trim() || !hostelId || !owner || isSending}
+
+                aria-label="Send message"
+              >
+                {isSending ? <FaSpinner className="spinner-icon" /> : <FaPaperPlane />}
+              </button>
+            </div>
           </div>
         </div>
-      )}
-
-      <div className="message-input-container">
-        <textarea
-          value={message}
-          onChange={handleMessageChange}
-          onKeyPress={handleKeyPress}
-          placeholder={owner ? `Message to ${owner.username}...` : "Select a hostel to start chatting..."}
-          className="message-input"
-          disabled={!hostelId || !owner || isSending}
-          rows={1}
-        />
-        
-        <label className="file-input-wrapper" aria-label="Attach image">
-          <FaImage />
-          <input
-            type="file"
-            className="file-input"
-            onChange={handleImageChange}
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            disabled={!hostelId || !owner || isSending}
-          />
-        </label>
-        
-        <button
-          onClick={sendMessage}
-          className={`send-button ${isSending ? 'sending' : ''}`}
-          disabled={(!message.trim() && !image) || !hostelId || !owner || isSending}
-          aria-label="Send message"
-        >
-          {isSending ? <FaSpinner className="spinner-icon" /> : <FaPaperPlane />}
-        </button>
       </div>
     </div>
   );

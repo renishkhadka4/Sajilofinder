@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/axios";
 import "../styles/ContactUs.css";
+import Footer from "../components/Footer";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
@@ -32,9 +33,33 @@ const ContactUs = () => {
       <Navbar />
       <div className="contact-container">
         <h1 className="contact-title">Contact Us</h1>
-        <p className="contact-description">
-          Have a question, feedback, or concern? Send us a message.
-        </p>
+        
+        <div className="company-info">
+          <h2>Sajilo Finder</h2>
+          <p className="contact-description">
+            We're here to make your rental experience seamless and stress-free. 
+            Whether you have questions, suggestions, or need assistance, our team is ready to help!
+          </p>
+          
+          <div className="contact-details">
+            <div className="contact-item">
+              <i className="fas fa-phone"></i>
+              <p>+977 9741816117</p>
+            </div>
+            <div className="contact-item">
+              <i className="fas fa-map-marker-alt"></i>
+              <p><a href="https://www.google.com/maps/place/Sajilo+Rental/@27.7020913,85.3193857,1022m/data=!3m2!1e3!4b1!4m6!3m5!1s0x39eb197193f7379f:0x628e424021ef929f!8m2!3d27.7020913!4d85.321966!16s%2Fg%2F11sx74khlx?entry=ttu" target="_blank" rel="noopener noreferrer">Find us on Google Maps</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div className="welcome-message">
+          <p>
+            At Sajilo Finder, we value your feedback and inquiries. Our dedicated team is committed to 
+            providing exceptional service to meet all your rental needs. Feel free to reach out using 
+            the form below, and we'll get back to you promptly. Your satisfaction is our priority!
+          </p>
+        </div>
 
         <form className="contact-form" onSubmit={handleSubmit}>
           <input
@@ -68,6 +93,7 @@ const ContactUs = () => {
           {error && <p className="error-msg">{error}</p>}
         </form>
       </div>
+      <Footer />
     </>
   );
 };

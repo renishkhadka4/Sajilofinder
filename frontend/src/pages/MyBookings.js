@@ -3,6 +3,7 @@ import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/MyBooking.css";
+import Footer from "../components/Footer";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -264,6 +265,7 @@ const MyBookings = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

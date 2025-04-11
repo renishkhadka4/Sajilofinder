@@ -177,6 +177,7 @@ class HostelViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
         hostel = serializer.save(owner=self.request.user)
+        
         if images:
             for img in images:
                 HostelImage.objects.create(hostel=hostel, image=img)
@@ -442,7 +443,7 @@ from .models import Hostel
 from .serializers import HostelSerializer
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+
 def get_all_verified_hostels(request):
     try:
         hostels = Hostel.objects.filter(is_verified=True)
@@ -453,6 +454,11 @@ def get_all_verified_hostels(request):
         return Response({"error": str(e)}, status=500)
 
 
+@api_view(['GET'])
+def get_all_hostels(request):
+    hostels = Hostel.objects.all()
+    serializer = HostelSerializer(hostels, many=True, context={"request": request})
+    return Response(serializer.data)
 
 
 from rest_framework import viewsets, permissions, status

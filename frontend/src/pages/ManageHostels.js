@@ -110,36 +110,40 @@ const ManageHostels = () => {
 
   const validateCurrentStep = () => {
     let isValid = false;
-    
-    switch(currentStep) {
+  
+    switch (currentStep) {
       case 1:
         isValid = formData.name.trim() !== '' && 
-                 formData.description.trim() !== '';
+                  formData.description.trim() !== '';
         break;
+  
       case 2:
-        isValid = formData.address.trim() !== '' && 
-                 formData.city.trim() !== '' && 
-                 formData.state.trim() !== '' && 
-                 formData.zip.trim() !== '';
+        isValid = formData.address.trim() !== '' &&
+                  formData.city.trim() !== '' &&
+                  formData.state.trim() !== '' &&
+                  formData.zip.trim() !== '';
         break;
+  
       case 3:
-        isValid = formData.pricing.minRent.toString().trim() !== '' && 
-                 formData.pricing.maxRent.toString().trim() !== '';
+        isValid = formData.pricing.minRent.toString().trim() !== '' &&
+                  formData.pricing.maxRent.toString().trim() !== '';
         break;
+  
       case 4:
-          const hasImage = formData.images.length > 0;
-          isValid = hasImage; // Only image is required
-          break;
-        
+        // ✅ Only validate image presence
+        isValid = formData.images.length > 0;
+        break;
+  
       default:
         isValid = false;
     }
-    
-    setFormValidation(prev => ({
+  
+    setFormValidation((prev) => ({
       ...prev,
       [`step${currentStep}`]: isValid
     }));
   };
+  
   const LocationMarker = () => {
     useMapEvents({
       click(e) {
@@ -355,7 +359,7 @@ const ManageHostels = () => {
       data.append('name', formData.name);
       data.append('address', formData.address);
       data.append('description', formData.description);
-      data.append('phone', formData.contact_number);
+      data.append('contact_number', formData.contact_number);
       data.append('email', formData.email);
       data.append('established_year', formData.established_year);
       data.append('city', formData.city);
@@ -364,6 +368,7 @@ const ManageHostels = () => {
       data.append('google_maps_link', formData.googleMapsLink);
       data.append("latitude", formData.latitude);
       data.append("longitude", formData.longitude);
+      data.append('visiting_hours', formData.rules.visiting_hours); 
 
       data.append('nearby_colleges', formData.nearby_colleges);
       data.append('nearby_markets', formData.nearby_markets);

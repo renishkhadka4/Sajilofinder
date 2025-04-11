@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
-import "../styles/ChangePassoword.css";
-
+import "../styles/StudentChnagePassword.css";
+import Footer from "../components/Footer";
 const StudentChangePassword = () => {
   const navigate = useNavigate();
   const [passwordData, setPasswordData] = useState({
@@ -23,21 +23,24 @@ const StudentChangePassword = () => {
     match: false
   });
 
+  // Fix: Add useEffect to check password match when either password changes
+  useEffect(() => {
+    if (passwordData.new_password || passwordData.confirm_password) {
+      setValidationErrors(prev => ({
+        ...prev,
+        match: 
+          passwordData.new_password === passwordData.confirm_password && 
+          passwordData.confirm_password !== ""
+      }));
+    }
+  }, [passwordData.new_password, passwordData.confirm_password]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setPasswordData((prevData) => ({ ...prevData, [name]: value }));
 
     if (name === "new_password") {
       validatePassword(value);
-    }
-
-    if (name === "new_password" || name === "confirm_password") {
-      setValidationErrors((prev) => ({
-        ...prev,
-        match:
-          passwordData.confirm_password === value ||
-          (name === "confirm_password" && passwordData.new_password === value)
-      }));
     }
   };
 
@@ -53,7 +56,12 @@ const StudentChangePassword = () => {
   };
 
   const allValidationsPassed = () => {
-    return Object.values(validationErrors).every(Boolean);
+    // Fix: Check if all validations are true and both passwords are entered
+    const allRequirementsMet = Object.values(validationErrors).every(Boolean);
+    return allRequirementsMet && 
+           passwordData.current_password.trim() !== "" && 
+           passwordData.new_password.trim() !== "" && 
+           passwordData.confirm_password.trim() !== "";
   };
 
   const handleSubmit = async (e) => {
@@ -98,6 +106,7 @@ const StudentChangePassword = () => {
         new_password: "",
         confirm_password: ""
       });
+      // Reset validations after successful password change
       setValidationErrors({
         length: false,
         uppercase: false,
@@ -108,8 +117,11 @@ const StudentChangePassword = () => {
       });
 
       setTimeout(() => {
-        navigate("/student/profile");
+        localStorage.removeItem("token"); // ✅ Clear token
+       
+        navigate("/login"); // ✅ Redirect to login
       }, 2000);
+      
     } catch (error) {
       console.error("Error changing password:", error);
       if (error.response && error.response.status === 400) {
@@ -197,7 +209,7 @@ const StudentChangePassword = () => {
               <button
                 type="button"
                 className="cancel-btn"
-                onClick={() => navigate("/student/profile")}
+                onClick={() => navigate("/login")}
                 disabled={loading}
               >
                 Cancel
@@ -205,6 +217,7 @@ const StudentChangePassword = () => {
               <button
                 type="submit"
                 className="submit-btn"
+                
                 disabled={loading || !allValidationsPassed()}
               >
                 {loading ? "Updating..." : "Update Password"}
@@ -216,6 +229,7 @@ const StudentChangePassword = () => {
           {error && <p className="error-message">{error}</p>}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

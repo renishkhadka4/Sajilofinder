@@ -153,15 +153,12 @@ const HostelOwnerMessenger = () => {
   // 9. Handle student selection change
   const handleStudentChange = (e) => {
     const studentId = e.target.value;
-    setSelectedStudentId(studentId); // ✅ Update the state
+    setSelectedStudentId(studentId); // Keep it as string
   
-    if (studentId) {
-      const student = students.find(s => s.student_id === parseInt(studentId));
-      setSelectedChat(student || null);
-    } else {
-      setSelectedChat(null);
-    }
+    const student = students.find(s => s.student_id.toString() === studentId); // Convert to string for matching
+    setSelectedChat(student || null);
   };
+  
   
   
 
@@ -193,23 +190,19 @@ const HostelOwnerMessenger = () => {
 
         <div className="student-selector">
           <label>Select Student:</label>
-<select
+          <select
   value={selectedStudentId}
-  onChange={(e) => {
-    const id = e.target.value;
-    setSelectedStudentId(id); // Track the selected value
-    const student = students.find((s) => s.student_id === parseInt(id));
-    setSelectedChat(student || null);
-  }}
+  onChange={handleStudentChange}
   className="student-dropdown"
 >
   <option value="">-- Select --</option>
   {students.map((s) => (
-    <option key={s.student_id} value={s.student_id}>
+    <option key={s.student_id} value={s.student_id.toString()}>
       {s.username} — from {s.hostel_name || "Unknown Hostel"}
     </option>
   ))}
 </select>
+
 
         </div>
 

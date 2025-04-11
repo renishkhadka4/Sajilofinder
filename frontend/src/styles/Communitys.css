@@ -12,6 +12,32 @@
   padding: 1rem;
 }
 
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.choose-image-button {
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(90deg, #4a90e2, #4152cf);
+  color: white;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  display: inline-block;
+}
+
+.choose-image-button:hover {
+  background: linear-gradient(90deg, #3b6fd4, #2b3db4);
+}
+
+.hidden-file-input {
+  display: none;
+}
+
 /* Create Post Section */
 .create-post {
   margin-bottom: 2rem;

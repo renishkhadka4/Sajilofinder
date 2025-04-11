@@ -9,6 +9,7 @@ const AboutUs = () => {
   const [about, setAbout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isVisible, setIsVisible] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -24,6 +25,31 @@ const AboutUs = () => {
         setLoading(false);
       });
   }, []);
+
+  // Add scroll animation observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setIsVisible(prev => ({ ...prev, [entry.target.id]: true }));
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const sections = document.querySelectorAll('.animate-section');
+    sections.forEach(section => {
+      observer.observe(section);
+    });
+
+    return () => {
+      sections.forEach(section => {
+        observer.unobserve(section);
+      });
+    };
+  }, [loading]);
 
   // Helper function to get appropriate icons for services
   const getServiceIcon = (service) => {
@@ -44,7 +70,9 @@ const AboutUs = () => {
     const descriptions = {
       "Property Search": "Find your dream home with our advanced search tools that match your specific requirements and preferences.",
       "Home Listing": "List your property with professional photography, detailed descriptions, and maximum visibility to potential buyers.",
-      
+      "Virtual Tours": "Explore properties remotely with our immersive virtual tour technology.",
+      "Mortgage Calculator": "Plan your finances with our easy-to-use mortgage calculator.",
+      "Paperwork": "Streamline the paperwork process with our digital document management system.",
       "Customer Support": "Our dedicated support team is available to assist you at every step of your property journey."
     };
     
@@ -85,55 +113,78 @@ const AboutUs = () => {
     <>
       <Navbar />
       
-      {/* Hero Section */}
+      {/* Hero Section with Parallax Effect */}
       <div className="about-hero" style={{backgroundImage: "url('/images/hero-background.jpg')"}}>
         <div className="about-hero-content">
-          <h1 className="about-title">ABOUT US</h1>
-          <div className="title-underline"></div>
+          <h1 className="about-title animate-text">ABOUT US</h1>
+          <div className="title-underline animate-underline"></div>
         </div>
       </div>
       
       <div className="about-container">
         {/* Main Content Section */}
-        <div className="about-main">
+        <div id="story-section" className="about-main animate-section">
           <div className="about-text-content">
-            <h2 className="about-subtitle">Our Story</h2>
-            <p className="about-description">{about.description || defaultDescription}</p>
+            <h2 className={`about-subtitle ${isVisible['story-section'] ? 'fade-in' : ''}`}>Our Story</h2>
+            <div className={`title-underline blue-underline ${isVisible['story-section'] ? 'width-animate' : ''}`}></div>
+            <p className={`about-description ${isVisible['story-section'] ? 'slide-up' : ''}`}>
+              {about.description || defaultDescription}
+            </p>
             
             {/* Mission Statement */}
-            <div className="about-mission">
+            <div className={`about-mission ${isVisible['story-section'] ? 'fade-in-delay' : ''}`}>
               <h2 className="about-subtitle">Our Mission</h2>
               <p className="about-description">
                 {about.mission || "Our mission at Sajilo Finder is to revolutionize the way students and professionals in Nepal find and book hostels. We aim to create a transparent, trusted, and user-friendly platform that simplifies accommodation discovery, ensures quality service, and connects hostel seekers with verified providers. Through smart technology, secure payments, and community-driven features, we strive to make hostel living more accessible, reliable, and stress-free for everyone."}
               </p>
             </div>
           </div>
-          </div>
+        </div>
             
-    
-          <h2 className="about-subtitle">Our Services</h2>
-<div className="title-underline"></div>
-
-{about.services ? (
-  about.services.split("\n").map((paragraph, index) => (
-    <p key={index} className="about-description">{paragraph}</p>
-  ))
-) : (
-  <p className="about-description">Our service details will be updated soon.</p>
-)}
-
-
+        {/* Services Section */}
+        <div id="services-section" className="animate-section">
+          <h2 className={`about-subtitle ${isVisible['services-section'] ? 'fade-in' : ''}`}>Our Services</h2>
+          <div className={`title-underline blue-underline ${isVisible['services-section'] ? 'width-animate' : ''}`}></div>
+          
+          {about.services ? (
+            about.services.split("\n").map((paragraph, index) => (
+              <p key={index} className={`about-description ${isVisible['services-section'] ? 'slide-up-staggered' : ''}`} style={{animationDelay: `${index * 0.2}s`}}>
+                {paragraph}
+              </p>
+            ))
+          ) : (
+            <div className="about-services-grid">
+              {["Property Search", "Home Listing", "Virtual Tours", "Mortgage Calculator", "Paperwork", "Customer Support"].map((service, index) => (
+                <div 
+                  key={index} 
+                  className={`service-card ${isVisible['services-section'] ? 'pop-in' : ''}`}
+                  style={{animationDelay: `${index * 0.15}s`}}
+                >
+                  <div className="service-icon pulse-animation">
+                    {getServiceIcon(service)}
+                  </div>
+                  <h3 className="service-title">{service}</h3>
+                  <p className="service-description">{getServiceDescription(service)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* Gallery Section */}
         {[about.image1, about.image2, about.image3, about.image4].filter(Boolean).length > 0 && (
-          <div className="about-gallery-section">
-            <h2 className="about-subtitle">Our Gallery</h2>
-            <div className="title-underline"></div>
+          <div id="gallery-section" className="about-gallery-section animate-section">
+            <h2 className={`about-subtitle ${isVisible['gallery-section'] ? 'fade-in' : ''}`}>Our Gallery</h2>
+            <div className={`title-underline blue-underline ${isVisible['gallery-section'] ? 'width-animate' : ''}`}></div>
             
             <div className="about-gallery">
-              {[about.image2, about.image3, about.image4].filter(Boolean).map(
+              {[about.image1, about.image2, about.image3, about.image4].filter(Boolean).map(
                 (img, idx) => (
-                  <div key={idx} className="gallery-item">
+                  <div 
+                    key={idx} 
+                    className={`gallery-item ${isVisible['gallery-section'] ? 'fade-scale' : ''}`}
+                    style={{animationDelay: `${idx * 0.2}s`}}
+                  >
                     <img src={img} alt={`Sajilo Finder Gallery ${idx + 1}`} />
                   </div>
                 )
@@ -142,82 +193,36 @@ const AboutUs = () => {
           </div>
         )}
         
-        {/* Testimonials Section */}
-        {about.testimonials && about.testimonials.length > 0 && (
-          <div className="about-testimonials-section">
-            <h2 className="about-subtitle">What Our Clients Say</h2>
-            <div className="title-underline"></div>
-            
-            <div className="testimonials-slider">
-              {about.testimonials.map((testimonial, index) => (
-                <div key={index} className="testimonial-card">
-                  <div className="testimonial-text">"{testimonial.text}"</div>
-                  <div className="testimonial-author">
-                    <div className="testimonial-author-name">{testimonial.name}</div>
-                    <div className="testimonial-author-title">{testimonial.title}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Team Section - Only show if team data exists */}
-        {about.team && about.team.length > 0 && (
-          <div className="about-team-section">
-            <h2 className="about-subtitle">Meet Our Team</h2>
-            <div className="title-underline"></div>
-            
-            <div className="team-grid">
-              {about.team.map((member, index) => (
-                <div key={index} className="team-member">
-                  {member.image && <img src={member.image} alt={member.name} />}
-                  <h3>{member.name}</h3>
-                  <p className="member-title">{member.position}</p>
-                  <p className="member-bio">{member.bio}</p>
-                  <div className="member-social">
-                    {member.social && Object.entries(member.social).map(([platform, url], idx) => (
-                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="social-link">
-                        <i className={`fa fa-${platform.toLowerCase()}`}></i>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
         {/* Why Choose Us Section */}
-        <div className="about-why-us-section">
-          <h2 className="about-subtitle">Why Choose Sajilo Finder</h2>
-          <div className="title-underline"></div>
+        <div id="why-us-section" className="about-why-us-section animate-section">
+          <h2 className={`about-subtitle ${isVisible['why-us-section'] ? 'fade-in' : ''}`}>Why Choose Sajilo Finder</h2>
+          <div className={`title-underline blue-underline ${isVisible['why-us-section'] ? 'width-animate' : ''}`}></div>
           
           <div className="why-us-grid">
-            <div className="why-us-item">
-              <div className="why-us-icon">
-                <i className="fa fa-check-circle"></i>
+            <div className={`why-us-item ${isVisible['why-us-section'] ? 'slide-in-left' : ''}`}>
+              <div className="why-us-icon float-animation">
+                <FaSearch />
               </div>
               <h3>Extensive Property Listings</h3>
               <p>Access thousands of verified property listings across the country</p>
             </div>
-            <div className="why-us-item">
-              <div className="why-us-icon">
-                <i className="fa fa-shield"></i>
+            <div className={`why-us-item ${isVisible['why-us-section'] ? 'slide-in-left' : ''}`} style={{animationDelay: '0.2s'}}>
+              <div className="why-us-icon float-animation">
+                <FaAward />
               </div>
               <h3>Verified Owners</h3>
               <p>All property owners are verified for your safety and peace of mind</p>
             </div>
-            <div className="why-us-item">
-              <div className="why-us-icon">
-                <i className="fa fa-thumbs-up"></i>
+            <div className={`why-us-item ${isVisible['why-us-section'] ? 'slide-in-left' : ''}`} style={{animationDelay: '0.4s'}}>
+              <div className="why-us-icon float-animation">
+                <FaLightbulb />
               </div>
               <h3>User-friendly Interface</h3>
               <p>Our platform is designed to make your property search simple and intuitive</p>
             </div>
-            <div className="why-us-item">
-              <div className="why-us-icon">
-                <i className="fa fa-headphones"></i>
+            <div className={`why-us-item ${isVisible['why-us-section'] ? 'slide-in-left' : ''}`} style={{animationDelay: '0.6s'}}>
+              <div className="why-us-icon float-animation">
+                <FaHeadset />
               </div>
               <h3>Dedicated Support</h3>
               <p>Our team is always ready to assist you with any questions or concerns</p>
@@ -226,12 +231,12 @@ const AboutUs = () => {
         </div>
       </div>
       
-      {/* Call to Action Section */}
+      {/* Call to Action Section with Parallax */}
       <div className="about-cta" style={{backgroundImage: "url('/images/cta-background.jpg')"}}>
         <div className="cta-content">
-          <h2>Ready to Find Your Perfect Home?</h2>
-          <p>Start your journey with Sajilo Finder today</p>
-          <button className="cta-button">Get Started</button>
+          <h2 className="cta-title">Ready to Find Your Perfect Home?</h2>
+          <p className="cta-subtitle">Start your journey with Sajilo Finder today</p>
+          <button className="cta-button pulse-button">Get Started</button>
         </div>
       </div>
       

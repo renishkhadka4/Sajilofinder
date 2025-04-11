@@ -1,22 +1,46 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 import api from "../api/axios";
 import "../styles/HostelDetail.css";
 import Navbar from "../components/Navbar";
 import StudentMessenger from "../pages/StudentMessenger";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+
+// Fix for missing Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+
+
+
 
 // Extracted components for better organization
 const HostelInfo = ({ hostel }) => (
   <div className="hostel-info-section">
     <h1>{hostel.name}</h1>
     <p>📍 {hostel.address}</p>
-    <p>📞 {hostel.contact_number || "N/A"} | 📧 {hostel.email || "N/A"}</p>
+    <p>📞 {hostel.contact_number?.trim() || "Not Provided"} | 📧 {hostel.email?.trim() || "N/A"}</p>
+
     <p>🗓 Registered: {hostel.established_year || "N/A"}</p>
-    <p>🕒 Visiting Hours: {hostel.visiting_hours || "N/A"}</p>
+    <p>🕒 Visiting Hours: {hostel.visiting_hours?.trim() ? hostel.visiting_hours : "N/A"}</p>
+
     <p>🏫 Nearby Colleges: {hostel.nearby_colleges || "N/A"}</p>
     <p>🛒 Nearby Markets: {hostel.nearby_markets || "N/A"}</p>
   </div>
 );
+
+
+
+
+
 
 const HostelImages = ({ images }) => (
   <div className="hostel-images">
@@ -58,6 +82,13 @@ const Amenities = ({ hostel }) => {
   );
 };
 
+const statusIcons = {
+  Available: "🟢",
+  Booked: "🔴",
+  Pending: "🟠",
+  Rejected: "⚪",
+};
+
 const RoomStatus = ({ status }) => {
   const statusClasses = {
     Available: "status-available",
@@ -67,9 +98,12 @@ const RoomStatus = ({ status }) => {
   };
 
   return (
-    <p className={`room-status ${statusClasses[status] || ""}`}>{status}</p>
+    <p className={`room-status ${statusClasses[status] || ""}`}>
+      {statusIcons[status] || "❔"} {status}
+    </p>
   );
 };
+
 
 const RoomCard = ({ room, floorId, status, onBooking }) => (
   <div className="room-card">
@@ -227,6 +261,47 @@ const HostelDetail = () => {
   const [editMode, setEditMode] = useState(null);
   const [editReplyMode, setEditReplyMode] = useState(null);
   const [editInputs, setEditInputs] = useState({});
+
+
+const [showMap, setShowMap] = useState(false);
+const [mapCoordinates, setMapCoordinates] = useState(null);
+const [isMapLoading, setIsMapLoading] = useState(false);
+const defaultCoordinates = [27.7172, 85.3240]; // Kathmandu fallback
+const mapRef = React.useRef(null);
+
+const handleToggleMap = () => setShowMap(!showMap);
+
+useEffect(() => {
+  if (!data.hostel || !showMap) return;
+
+  if (data.hostel.latitude && data.hostel.longitude) {
+    setMapCoordinates([parseFloat(data.hostel.latitude), parseFloat(data.hostel.longitude)]);
+  } else {
+    geocodeAddress();
+  }
+}, [data.hostel, showMap]);
+
+const geocodeAddress = async () => {
+  if (!data.hostel) return;
+
+  setIsMapLoading(true);
+  try {
+    const query = encodeURIComponent(`${data.hostel.address}, ${data.hostel.city}, ${data.hostel.state}`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+    const result = await res.json();
+
+    if (result?.[0]) {
+      setMapCoordinates([parseFloat(result[0].lat), parseFloat(result[0].lon)]);
+    } else {
+      setMapCoordinates(defaultCoordinates);
+    }
+  } catch (err) {
+    setMapCoordinates(defaultCoordinates);
+  } finally {
+    setIsMapLoading(false);
+  }
+};
+
 
   // Fetch all data at once
   const fetchData = useCallback(async () => {
@@ -405,18 +480,17 @@ const HostelDetail = () => {
 
   // Room status helper
   const getRoomStatus = (roomId) => {
-    const booking = data.studentBookings.find(
-      (b) => b.room.id === roomId && b.room.floor.hostel.id === parseInt(id)
+    const activeBooking = data.studentBookings.find(
+      (b) => b.room.id === roomId && ["pending", "confirmed"].includes(b.status)
     );
-
-    if (booking) {
-      if (booking.status === "confirmed") return "Booked";
-      if (booking.status === "pending") return "Pending";
-      if (booking.status === "rejected") return "Rejected";
+  
+    if (activeBooking) {
+      return activeBooking.status === "confirmed" ? "Booked" : "Pending";
     }
-
+  
     return "Available";
   };
+  
 
   // Chat handlers
   const toggleChat = () => {
@@ -471,19 +545,60 @@ const HostelDetail = () => {
 
   return (
     <div>
+               
       <Navbar />
       <div className="hostel-detail-container">
         <div className="hostel-content">
           {/* Hostel Information */}
           <HostelInfo hostel={data.hostel} />
           <HostelImages images={data.hostel.images} />
+          
 
           {/* Description */}
           <div className="hostel-description">
             <h2>Description</h2>
             <p>{data.hostel.description}</p>
           </div>
-
+                    <div className="map-toggle-controls">
+  {data.hostel.google_maps_link && (
+    <a href={data.hostel.google_maps_link} target="_blank" rel="noopener noreferrer" className="map-link-btn">
+      🗺️ View on Google Maps
+    </a>
+  )}
+  <button onClick={handleToggleMap} className="map-toggle-btn">
+    {showMap ? "Hide Map" : "Show Map"}
+  </button>
+</div>
+          {showMap && (
+  <div className="map-wrapper">
+    {isMapLoading ? (
+      <p>Loading map...</p>
+    ) : mapCoordinates ? (
+      <MapContainer
+        center={mapCoordinates}
+        zoom={15}
+        className="leaflet-map"
+        whenCreated={(map) => {
+          mapRef.current = map;
+          setTimeout(() => map.invalidateSize(), 300);
+        }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
+        <Marker position={mapCoordinates}>
+          <Popup>
+            <strong>{data.hostel.name}</strong><br />
+            {data.hostel.address}
+          </Popup>
+        </Marker>
+      </MapContainer>
+    ) : (
+      <p>Map unavailable. Please check address or coordinates.</p>
+    )}
+  </div>
+)}
           {/* Amenities */}
           <Amenities hostel={data.hostel} />
 
@@ -532,6 +647,11 @@ const HostelDetail = () => {
               <p>No floors available for this hostel.</p>
             )}
           </div>
+
+
+
+
+
 
           {/* Feedback Section */}
           <div className="feedback-section">
@@ -593,24 +713,33 @@ const HostelDetail = () => {
         <RecentHostels hostels={data.recentHostels} />
       </div>
 
-      {/* Chat Feature */}
-      {data.hostel?.id && (
-        <>
-          <button className="floating-chat-button" onClick={toggleChat}>
-            💬 Chat
-          </button>
+     {/* Updated Chat Feature Implementation */}
+{data.hostel?.id && (
+  <>
+    <button className="floating-chat-button" onClick={toggleChat}>
+      💬 
+    </button>
 
-          {showChat && (
-            <div className="chat-popup">
-              <div className="chat-popup-header">
-                <span>Chat with Hostel Owner</span>
-                <button onClick={() => setShowChat(false)}>❌</button>
-              </div>
-              <StudentMessenger selectedHostelId={data.hostel.id} />
-            </div>
-          )}
+    {showChat && (
+      <div className="chat-popup">
+        <div className="chat-popup-header">
+          <span>Chat with Hostel Owner</span>
+          <button onClick={() => setShowChat(false)}>❌</button>
+        </div>
+        {/* Make sure the content container takes up available space */}
+        <div className="chat-popup-content">
+          {/* Pass the hostel owner's ID directly to the messenger component */}
+          <StudentMessenger 
+            selectedHostelId={data.hostel.id} 
+            hostelOwnerId={data.hostel.owner_id} 
+            inPopup={true} 
+          />
+        </div>
+      </div>
+    )}
         </>
       )}
+      <Footer />
     </div>
   );
 };

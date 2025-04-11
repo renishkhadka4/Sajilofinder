@@ -3,6 +3,7 @@ import api from '../api/axios';
 import '../styles/Communitys.css';
 import { toast } from 'react-toastify';
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const StudentCommunity = () => {
   const [caption, setCaption] = useState('');
@@ -164,9 +165,12 @@ const StudentCommunity = () => {
   };
 
   return (
+    <div className='renish'>
+        <Navbar />
     <div className="community-page">
-      <Navbar />
+ 
       <div className="community-container">
+        
         <div className="create-post">
           <h2>Create Post</h2>
           <form onSubmit={handlePostSubmit}>
@@ -177,15 +181,17 @@ const StudentCommunity = () => {
               rows="4"
             />
             <div className="file-input-container">
-              <label className="file-input-label">
-                <span>Choose Image</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageChange} 
-                  className="file-input" 
-                />
-              </label>
+            <label htmlFor="image-upload" className="choose-image-button">
+    📁 Choose Image
+  </label>
+  <input
+    type="file"
+    id="image-upload"
+    accept="image/*"
+    onChange={handleImageChange}
+    className="hidden-file-input"
+  />
+              
               {preview && (
                 <div className="preview-container">
                   <img src={preview} alt="Preview" className="preview-image" />
@@ -274,6 +280,9 @@ const StudentCommunity = () => {
         </div>
       </div>
     </div>
+    <Footer />
+    </div>
+    
   );
 };
 
