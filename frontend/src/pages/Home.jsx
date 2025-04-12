@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
@@ -26,8 +26,41 @@ import {
   RefreshCw
 } from "lucide-react";
 
+// Constants
+const PRICE_RANGE_MIN = 0;
+const PRICE_RANGE_MAX = 20000;
+const PRICE_STEP = 1000;
+
+// FAQ data
+const FAQS = [
+  {
+    question: "How do I book a hostel on Sajilo Finder?",
+    answer: "You can search for hostels based on your preferences, view available options, and book directly through our platform. After selecting a hostel, you'll complete a simple booking form and receive confirmation."
+  },
+  {
+    question: "Are the hostels verified?",
+    answer: "Yes, all hostels listed on Sajilo Finder are verified by our team to ensure they meet our safety and quality standards. We personally visit and review each property before listing."
+  },
+  {
+    question: "Can I cancel my booking?",
+    answer: "Yes, you can cancel bookings according to the cancellation policy of each hostel. Most hostels allow free cancellation up to 7 days before check-in. Check the specific policy on the hostel's page."
+  },
+  {
+    question: "How can I contact hostel owners directly?",
+    answer: "Once you've made a booking, you'll get access to our direct messaging feature that allows you to chat with hostel owners or managers. You can also find contact information on each hostel's page."
+  },
+  {
+    question: "Are meals included in hostel bookings?",
+    answer: "This varies by hostel. Some hostels include meals in their rates, while others offer meal services for an additional fee. Check the amenities section on each hostel listing for details."
+  }
+];
+
 const HomePage = () => {
   const navigate = useNavigate();
+  
+  // Auth states
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token;
   
   // Search form states
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,20 +74,17 @@ const HomePage = () => {
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [priceRange, setPriceRange] = useState([0, 20000]);
+  const [priceRange, setPriceRange] = useState([PRICE_RANGE_MIN, PRICE_RANGE_MAX]);
   const [showFilters, setShowFilters] = useState(false);
   
   // Blog states
   const [blogs, setBlogs] = useState([]);
   
-  // FAQ states
+  // UI states
   const [activeFaq, setActiveFaq] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!localStorage.getItem("token");
-
-  // Fetch all hostels and blogs when component mounts
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -64,10 +94,10 @@ const HomePage = () => {
         setHostels(hostelsResponse.data);
         
         // Set featured hostels (top 6 with highest ratings)
-        const sortedHostels = [...hostelsResponse.data].sort((a, b) => 
-          (b.rating || 0) - (a.rating || 0)
-        );
-        setFeaturedHostels(sortedHostels.slice(0, 6));
+        const sortedHostels = [...hostelsResponse.data]
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 6);
+        setFeaturedHostels(sortedHostels);
         
         // Fetch blogs
         const blogsResponse = await api.get("/admin/public/blogs/");
@@ -81,63 +111,85 @@ const HomePage = () => {
     
     fetchData();
   }, []);
-  // This code should be added to your main JS file or component
 
-// Function to handle FAQ toggling
-document.addEventListener('DOMContentLoaded', () => {
-    // FAQ toggle functionality
-    const faqQuestions = document.querySelectorAll('.faq-question');
-    
-    faqQuestions.forEach(question => {
-      question.addEventListener('click', () => {
-        const answer = question.nextElementSibling;
-        const isOpen = question.classList.contains('open');
-        
-        // Close all other FAQs
-        document.querySelectorAll('.faq-question').forEach(q => {
-          q.classList.remove('open');
-          q.nextElementSibling.classList.remove('open');
-        });
-        
-        // Toggle the clicked FAQ
-        if (!isOpen) {
-          question.classList.add('open');
-          answer.classList.add('open');
-        }
-      });
-    });
-    
-    // Animate elements on scroll
-    const animateElements = document.querySelectorAll('.animate-fade-in');
-    
-    const checkIfInView = () => {
-      animateElements.forEach(element => {
-        const elementTop = element.getBoundingClientRect().top;
-        const elementVisible = 150;
-        
-        if (elementTop < window.innerHeight - elementVisible) {
-          element.style.opacity = '1';
-          element.style.transform = 'translateY(0)';
-        }
-      });
+  // Set up unauthorized event listener
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setShowLoginModal(true);
     };
-    
-    // Initialize elements with hidden state
-    animateElements.forEach(element => {
-      element.style.opacity = '0';
-      element.style.transform = 'translateY(20px)';
-      element.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
-    });
-    
-    // Check elements on scroll
-    window.addEventListener('scroll', checkIfInView);
-    
-    // Check initially on page load
-    checkIfInView();
-  });
+  
+    window.addEventListener("unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("unauthorized", handleUnauthorized);
+  }, []);
 
-  // Handle search form submission
-  const handleSearch = (e) => {
+  // DOM animation setup
+  useEffect(() => {
+    const setupAnimations = () => {
+      // FAQ toggle functionality
+      const faqQuestions = document.querySelectorAll('.faq-question');
+      
+      faqQuestions.forEach(question => {
+        question.addEventListener('click', () => {
+          const answer = question.nextElementSibling;
+          const isOpen = question.classList.contains('open');
+          
+          // Close all other FAQs
+          document.querySelectorAll('.faq-question').forEach(q => {
+            q.classList.remove('open');
+            q.nextElementSibling.classList.remove('open');
+          });
+          
+          // Toggle the clicked FAQ
+          if (!isOpen) {
+            question.classList.add('open');
+            answer.classList.add('open');
+          }
+        });
+      });
+      
+      // Animate elements on scroll
+      const animateElements = document.querySelectorAll('.animate-fade-in');
+      
+      const checkIfInView = () => {
+        animateElements.forEach(element => {
+          const elementTop = element.getBoundingClientRect().top;
+          const elementVisible = 150;
+          
+          if (elementTop < window.innerHeight - elementVisible) {
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0)';
+          }
+        });
+      };
+      
+      // Initialize elements with hidden state
+      animateElements.forEach(element => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        element.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+      });
+      
+      // Check elements on scroll
+      window.addEventListener('scroll', checkIfInView);
+      
+      // Check initially on page load
+      checkIfInView();
+    };
+
+    // Only run on client, not during SSR
+    if (typeof window !== 'undefined') {
+      // Wait for DOM to be fully loaded
+      if (document.readyState === 'complete') {
+        setupAnimations();
+      } else {
+        window.addEventListener('load', setupAnimations);
+        return () => window.removeEventListener('load', setupAnimations);
+      }
+    }
+  }, []);
+
+  // Event handlers - using useCallback for optimization
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
     
     // Build query parameters for the URL
@@ -148,30 +200,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (checkOut) searchParams.append('check_out', checkOut);
     if (nearby) searchParams.append('nearby', nearby);
     if (categoryFilter !== 'all') searchParams.append('category', categoryFilter);
-    if (priceRange[0] > 0) searchParams.append('min_price', priceRange[0]);
-    if (priceRange[1] < 20000) searchParams.append('max_price', priceRange[1]);
+    if (priceRange[0] > PRICE_RANGE_MIN) searchParams.append('min_price', priceRange[0]);
+    if (priceRange[1] < PRICE_RANGE_MAX) searchParams.append('max_price', priceRange[1]);
     
+    setSearchPerformed(true);
     // Redirect to hostels page with the search parameters
     navigate(`/hostels?${searchParams.toString()}`);
-  };
+  }, [searchTerm, checkIn, checkOut, nearby, categoryFilter, priceRange, navigate]);
   
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchTerm("");
     setCheckIn("");
     setCheckOut("");
     setNearby("");
     setCategoryFilter("all");
-    setPriceRange([0, 20000]);
+    setPriceRange([PRICE_RANGE_MIN, PRICE_RANGE_MAX]);
     setSearchPerformed(false);
-  };
+  }, []);
   
-  // Toggle FAQ item
-  const toggleFaq = (index) => {
-    setActiveFaq(activeFaq === index ? null : index);
-  };
+  const toggleFaq = useCallback((index) => {
+    setActiveFaq(prevActiveFaq => prevActiveFaq === index ? null : index);
+  }, []);
   
-  // Helper functions for rendering hostel cards
-  const renderStarRating = (rating) => {
+  const toggleFilters = useCallback(() => {
+    setShowFilters(prev => !prev);
+  }, []);
+  
+  // UI Helper functions - using useMemo for optimization
+  const renderStarRating = useCallback((rating) => {
     const ratingValue = rating || 0;
     const fullStars = Math.floor(ratingValue);
     const hasHalfStar = ratingValue % 1 >= 0.5;
@@ -194,9 +250,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <span className="rating-value">{ratingValue.toFixed(1)}</span>
       </div>
     );
-  };
+  }, []);
   
-  const renderAmenities = (hostel) => {
+  const renderAmenities = useCallback((hostel) => {
     const amenities = [];
     if (hostel.wifi) amenities.push(<Wifi size={16} className="amenity-icon" key="wifi" title="WiFi Available" />);
     if (hostel.mess_service) amenities.push(<Coffee size={16} className="amenity-icon" key="breakfast" title="Mess Service Available" />);
@@ -210,49 +266,73 @@ document.addEventListener('DOMContentLoaded', () => {
         )}
       </div>
     ) : null;
-  };
+  }, []);
   
-  const formatPrice = (price) => {
+  const formatPrice = useCallback((price) => {
     if (price === undefined || price === null) return "Price on request";
     
     const priceValue = parseFloat(price);
     if (isNaN(priceValue)) return price;
     
     return `Rs${priceValue}`;
-  };
-
-  // FAQ data
-  const faqs = [
-    {
-      question: "How do I book a hostel on Sajilo Finder?",
-      answer: "You can search for hostels based on your preferences, view available options, and book directly through our platform. After selecting a hostel, you'll complete a simple booking form and receive confirmation."
-    },
-    {
-      question: "Are the hostels verified?",
-      answer: "Yes, all hostels listed on Sajilo Finder are verified by our team to ensure they meet our safety and quality standards. We personally visit and review each property before listing."
-    },
-    {
-      question: "Can I cancel my booking?",
-      answer: "Yes, you can cancel bookings according to the cancellation policy of each hostel. Most hostels allow free cancellation up to 7 days before check-in. Check the specific policy on the hostel's page."
-    },
-    {
-      question: "How can I contact hostel owners directly?",
-      answer: "Once you've made a booking, you'll get access to our direct messaging feature that allows you to chat with hostel owners or managers. You can also find contact information on each hostel's page."
-    },
-    {
-      question: "Are meals included in hostel bookings?",
-      answer: "This varies by hostel. Some hostels include meals in their rates, while others offer meal services for an additional fee. Check the amenities section on each hostel listing for details."
-    }
-  ];
-  useEffect(() => {
-    const handleUnauthorized = () => {
-      setShowLoginModal(true);
-    };
-  
-    window.addEventListener("unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("unauthorized", handleUnauthorized);
   }, []);
-  
+
+  // Hostel Card component for better code organization
+  const HostelCard = useCallback(({ hostel }) => (
+    <div className="hostel-card">
+      <div style={{ position: "relative" }}>
+        <img 
+          src={hostel.images && hostel.images.length > 0 
+            ? hostel.images[0].image 
+            : "/images/hostel-placeholder.jpg"} 
+          alt={hostel.name} 
+          className="hostel-img" 
+          loading="lazy"
+        />
+        <span className="hostel-type">
+          {hostel.hostel_type === "boys" ? "Boys Hostel" : 
+           hostel.hostel_type === "girls" ? "Girls Hostel" : 
+           "Mixed Hostel"}
+        </span>
+      </div>
+      <div className="hostel-content">
+        <h3 className="hostel-title">{hostel.name}</h3>
+        <div className="hostel-location">
+          <MapPin size={14} />
+          <span>{hostel.address || "Location unavailable"}</span>
+        </div>
+        {renderStarRating(hostel.rating)}
+        {renderAmenities(hostel)}
+        <div className="hostel-price">
+          {formatPrice(hostel.price)} / month
+        </div>
+        {isLoggedIn ? (
+          <Link to={`/hostel/${hostel.id}`} className="view-details-btn">
+            View Details
+          </Link>
+        ) : (
+          <button className="view-details-btn" onClick={() => setShowLoginModal(true)}>
+            View Details
+          </button>
+        )}
+      </div>
+    </div>
+  ), [formatPrice, isLoggedIn, renderAmenities, renderStarRating]);
+
+  // LoginModal component
+  const LoginModal = useCallback(() => (
+    <div className="modal-overlay">
+      <div className="modal">
+        <h2>Login Required</h2>
+        <p>You need to login or register to continue.</p>
+        <div className="modal-buttons">
+          <Link to="/login" className="login-btn">Login</Link>
+          <Link to="/register" className="register-btn">Register</Link>
+          <button onClick={() => setShowLoginModal(false)} className="cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  ), []);
 
   return (
     <div className="homepage">
@@ -310,7 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <button 
               type="button" 
               className="filter-btn" 
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={toggleFilters}
+              aria-expanded={showFilters}
             >
               <Filter size={18} /> Filters
             </button>
@@ -351,18 +432,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                   <input
                     type="range"
-                    min="0"
-                    max="20000"
-                    step="1000"
+                    min={PRICE_RANGE_MIN}
+                    max={PRICE_RANGE_MAX}
+                    step={PRICE_STEP}
                     value={priceRange[0]}
                     onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
                     className="price-slider"
                   />
                   <input
                     type="range"
-                    min="0"
-                    max="20000" 
-                    step="1000"
+                    min={PRICE_RANGE_MIN}
+                    max={PRICE_RANGE_MAX} 
+                    step={PRICE_STEP}
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                     className="price-slider"
@@ -386,46 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ) : (
           <>
             <div className="hostels-grid">
-            {featuredHostels.map((hostel) => (
-                <div key={hostel.id} className="hostel-card">
-                  <div style={{ position: "relative" }}>
-                  <img 
-  src={hostel.images && hostel.images.length > 0 
-    ? hostel.images[0].image 
-    : "/images/hostel-placeholder.jpg"} 
-
-                      alt={hostel.name} 
-                      className="hostel-img" 
-                    />
-                    <span className="hostel-type">
-                      {hostel.hostel_type === "boys" ? "Boys Hostel" : 
-                       hostel.hostel_type === "girls" ? "Girls Hostel" : 
-                       "Mixed Hostel"}
-                    </span>
-                  </div>
-                  <div className="hostel-content">
-                    <h3 className="hostel-title">{hostel.name}</h3>
-                    <div className="hostel-location">
-                      <MapPin size={14} />
-                      <span>{hostel.address || "Location unavailable"}</span>
-                    </div>
-                    {renderStarRating(hostel.rating)}
-                    {renderAmenities(hostel)}
-                    <div className="hostel-price">
-                      {formatPrice(hostel.price)} / month
-                    </div>
-                    {isLoggedIn ? (
-  <Link to={`/hostel/${hostel.id}`} className="view-details-btn">
-    View Details
-  </Link>
-) : (
-  <button className="view-details-btn" onClick={() => setShowLoginModal(true)}>
-    View Details
-  </button>
-)}
-
-                  </div>
-                </div>
+              {featuredHostels.map((hostel) => (
+                <HostelCard key={hostel.id} hostel={hostel} />
               ))}
             </div>
             <Link to="/hostels" className="view-all-btn">
@@ -437,11 +480,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       {/* How It Works Section */}
       <div className="section-header">
-  <h2>New Here? See How It Works</h2>
-  <p>Learn how Sajilo Finder helps students, hostel owners, and admins in 5 simple steps.</p>
-  <Link to="/how-it-works" className="view-all-btn">Explore →</Link>
-</div>
-
+        <h2>New Here? See How It Works</h2>
+        <p>Learn how Sajilo Finder helps students, hostel owners, and admins in 5 simple steps.</p>
+        <Link to="/how-it-works" className="view-all-btn">Explore →</Link>
+      </div>
 
       {/* About Us Preview */}
       <div className="about-section">
@@ -456,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <Link to="/about" className="read-more">Read More →</Link>
       </div>
 
-      {/* Blog Section - Fetching from API */}
+      {/* Blog Section */}
       <div className="blog-preview-section">
         <div className="section-header">
           <h2>Latest from Our Blog</h2>
@@ -467,7 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
           {blogs.length > 0 ? (
             blogs.map(blog => (
               <div className="blog-card" key={blog.id}>
-                <img src={blog.image || "/images/blog-placeholder.jpg"} alt={blog.title} />
+                <img 
+                  src={blog.image || "/images/blog-placeholder.jpg"} 
+                  alt={blog.title} 
+                  loading="lazy"
+                />
                 <h4>{blog.title}</h4>
                 <p>
                   {blog.content.slice(0, 100)}...
@@ -478,19 +524,19 @@ document.addEventListener('DOMContentLoaded', () => {
           ) : (
             <>
               <div className="blog-card">
-                <img src="/images/blog1.jpg" alt="Blog 1" />
+                <img src="/images/blog1.jpg" alt="Blog 1" loading="lazy" />
                 <h4>5 Tips to Choose a Hostel in Kathmandu</h4>
                 <p>Explore what really matters when you're choosing your next student stay.</p>
                 <Link to="/blogs">Read More</Link>
               </div>
               <div className="blog-card">
-                <img src="/images/blog2.jpg" alt="Blog 2" />
+                <img src="/images/blog2.jpg" alt="Blog 2" loading="lazy" />
                 <h4>Affordable Hostels with Good Facilities</h4>
                 <p>Our top picks for budget hostels that don't compromise on quality.</p>
                 <Link to="/blogs">Read More</Link>
               </div>
               <div className="blog-card">
-                <img src="/images/blog3.jpg" alt="Blog 3" />
+                <img src="/images/blog3.jpg" alt="Blog 3" loading="lazy" />
                 <h4>Student Life in Kathmandu: A Guide</h4>
                 <p>Everything you need to know about living as a student in Nepal's capital.</p>
                 <Link to="/blogs">Read More</Link>
@@ -506,11 +552,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       {/* FAQs Section */}
       <div className="section-header">
-  <h2>Got Questions?</h2>
-  <p>We’ve answered the most common queries about booking, payments, and listings.</p>
-  <Link to="/faqs" className="view-all-btn">Visit FAQs</Link>
-</div>
-
+        <h2>Got Questions?</h2>
+        <p>We've answered the most common queries about booking, payments, and listings.</p>
+        <Link to="/faqs" className="view-all-btn">Visit FAQs</Link>
+      </div>
       
       {/* Testimonials Section */}
       <div className="testimonials-section">
@@ -520,12 +565,12 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         
         <div className="testimonials-container">
-          <div className="testimonial-card">
+          <div className="testimonial-card animate-fade-in">
             <div className="testimonial-text">
               Sajilo Finder made my transition to Kathmandu so much easier. I found a safe girls hostel near my college within my budget. The reviews were honest and helped me make a good choice.
             </div>
             <div className="testimonial-author">
-              <img src="/images/testimonial1.jpg" alt="Samiksha" className="author-avatar" />
+              <img src="/images/testimonial1.jpg" alt="Samiksha" className="author-avatar" loading="lazy" />
               <div className="author-info">
                 <h4>Samiksha Sharma</h4>
                 <p>BBA Student, Kathmandu</p>
@@ -533,12 +578,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           
-          <div className="testimonial-card">
+          <div className="testimonial-card animate-fade-in">
             <div className="testimonial-text">
               As someone new to the city, I was worried about finding good accommodation. Sajilo Finder's verified listings and direct chat with hostel owners gave me confidence in my decision.
             </div>
             <div className="testimonial-author">
-              <img src="/images/testimonial2.jpg" alt="Anish" className="author-avatar" />
+              <img src="/images/testimonial2.jpg" alt="Anish" className="author-avatar" loading="lazy" />
               <div className="author-info">
                 <h4>Anish Thapa</h4>
                 <p>Engineering Student, Lalitpur</p>
@@ -546,12 +591,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           
-          <div className="testimonial-card">
+          <div className="testimonial-card animate-fade-in">
             <div className="testimonial-text">
               The filtering options on Sajilo Finder are fantastic! I could narrow down hostels based on my exact requirements like WiFi, mess facility, and distance from my university.
             </div>
             <div className="testimonial-author">
-              <img src="/images/testimonial3.jpg" alt="Priya" className="author-avatar" />
+              <img src="/images/testimonial3.jpg" alt="Priya" className="author-avatar" loading="lazy" />
               <div className="author-info">
                 <h4>Priya Gurung</h4>
                 <p>Medical Student, Bhaktapur</p>
@@ -560,19 +605,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       </div>
-      {showLoginModal && (
-  <div className="modal-overlay">
-    <div className="modal">
-      <h2>Login Required</h2>
-      <p>You need to login or register to continue.</p>
-      <div className="modal-buttons">
-        <Link to="/login" className="login-btn">Login</Link>
-        <Link to="/register" className="register-btn">Register</Link>
-        <button onClick={() => setShowLoginModal(false)} className="cancel-btn">Cancel</button>
-      </div>
-    </div>
-  </div>
-)}
+
+      {/* Login Modal */}
+      {showLoginModal && <LoginModal />}
 
       {/* Contact Us CTA */}
       <div className="contact-cta-section">

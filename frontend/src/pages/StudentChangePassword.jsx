@@ -2,19 +2,39 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
-import "../styles/StudentChnagePassword.css";
 import Footer from "../components/Footer";
+import { Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, Lock } from "lucide-react";
+import "../styles/StudentChangePassword.css";
+
+const PasswordRequirement = ({ met, label }) => (
+  <div className={`requirement-item ${met ? "requirement-met" : "requirement-unmet"}`}>
+    {met ? <CheckCircle className="requirement-icon-success" size={16} /> : <XCircle className="requirement-icon-error" size={16} />}
+    <span>{label}</span>
+  </div>
+);
+
 const StudentChangePassword = () => {
   const navigate = useNavigate();
-  const [passwordData, setPasswordData] = useState({
+  const [formData, setFormData] = useState({
     current_password: "",
     new_password: "",
     confirm_password: ""
   });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [validationErrors, setValidationErrors] = useState({
+  
+  const [status, setStatus] = useState({
+    loading: false,
+    message: "",
+    error: "",
+    success: false
+  });
+  
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  
+  const [validations, setValidations] = useState({
     length: false,
     uppercase: false,
     lowercase: false,
@@ -23,21 +43,21 @@ const StudentChangePassword = () => {
     match: false
   });
 
-  // Fix: Add useEffect to check password match when either password changes
+  // Check password match when either password changes
   useEffect(() => {
-    if (passwordData.new_password || passwordData.confirm_password) {
-      setValidationErrors(prev => ({
+    if (formData.new_password || formData.confirm_password) {
+      setValidations(prev => ({
         ...prev,
         match: 
-          passwordData.new_password === passwordData.confirm_password && 
-          passwordData.confirm_password !== ""
+          formData.new_password === formData.confirm_password && 
+          formData.confirm_password !== ""
       }));
     }
-  }, [passwordData.new_password, passwordData.confirm_password]);
+  }, [formData.new_password, formData.confirm_password]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPasswordData((prevData) => ({ ...prevData, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
 
     if (name === "new_password") {
       validatePassword(value);
@@ -45,7 +65,7 @@ const StudentChangePassword = () => {
   };
 
   const validatePassword = (password) => {
-    setValidationErrors((prev) => ({
+    setValidations(prev => ({
       ...prev,
       length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
@@ -55,59 +75,76 @@ const StudentChangePassword = () => {
     }));
   };
 
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const allValidationsPassed = () => {
-    // Fix: Check if all validations are true and both passwords are entered
-    const allRequirementsMet = Object.values(validationErrors).every(Boolean);
+    const allRequirementsMet = Object.values(validations).every(Boolean);
     return allRequirementsMet && 
-           passwordData.current_password.trim() !== "" && 
-           passwordData.new_password.trim() !== "" && 
-           passwordData.confirm_password.trim() !== "";
+           formData.current_password.trim() !== "" && 
+           formData.new_password.trim() !== "" && 
+           formData.confirm_password.trim() !== "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
-    setError("");
+    setStatus({
+      loading: false,
+      message: "",
+      error: "",
+      success: false
+    });
 
-    if (!passwordData.current_password) {
-      return setError("⚠ Please enter your current password.");
+    if (!formData.current_password) {
+      return setStatus(prev => ({ ...prev, error: "Please enter your current password." }));
     }
 
-    if (!passwordData.new_password) {
-      return setError("⚠ Please enter a new password.");
+    if (!formData.new_password) {
+      return setStatus(prev => ({ ...prev, error: "Please enter a new password." }));
     }
 
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      return setError("⚠ Passwords do not match.");
+    if (formData.new_password !== formData.confirm_password) {
+      return setStatus(prev => ({ ...prev, error: "Passwords do not match." }));
     }
 
     if (!allValidationsPassed()) {
-      return setError("⚠ Password must meet all requirements.");
+      return setStatus(prev => ({ ...prev, error: "Password must meet all requirements." }));
     }
 
-    setLoading(true);
+    setStatus(prev => ({ ...prev, loading: true }));
     const token = localStorage.getItem("token");
 
     try {
       await api.put(
         "/auth/change-password/",
         {
-          old_password: passwordData.current_password,
-          new_password: passwordData.new_password
+          old_password: formData.current_password,
+          new_password: formData.new_password
         },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      setMessage("✅ Password updated successfully!");
-      setPasswordData({
+      setStatus({
+        loading: false,
+        message: "Password updated successfully!",
+        error: "",
+        success: true
+      });
+
+      setFormData({
         current_password: "",
         new_password: "",
         confirm_password: ""
       });
-      // Reset validations after successful password change
-      setValidationErrors({
+      
+      // Reset validations
+      setValidations({
         length: false,
         uppercase: false,
         lowercase: false,
@@ -116,117 +153,165 @@ const StudentChangePassword = () => {
         match: false
       });
 
+      // Redirect to login after successful password change
       setTimeout(() => {
-        localStorage.removeItem("token"); // ✅ Clear token
-       
-        navigate("/login"); // ✅ Redirect to login
+        localStorage.removeItem("token");
+        navigate("/login");
       }, 2000);
       
     } catch (error) {
       console.error("Error changing password:", error);
+      
       if (error.response && error.response.status === 400) {
-        setError("⚠ Incorrect current password.");
+        setStatus({
+          loading: false,
+          message: "",
+          error: "Incorrect current password.",
+          success: false
+        });
       } else {
-        setError("⚠ Failed to update password.");
+        setStatus({
+          loading: false,
+          message: "",
+          error: "Failed to update password. Please try again later.",
+          success: false
+        });
       }
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="password-change-page-wrapper">
       <Navbar />
-      <div className="dashboard-main">
-        <div className="change-password-page">
-          <h1>Change Password</h1>
-          <p className="page-description">
-            Please enter your current and new password below.
-          </p>
+      <div className="password-change-content">
+        <div className="password-change-container">
+          <div className="password-change-header">
+            <div className="password-change-icon-wrapper">
+              <Lock className="password-change-icon" size={28} />
+            </div>
+            <h1 className="password-change-title">Change Password</h1>
+            <p className="password-change-description">
+              Update your password to keep your account secure
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="password-form">
-            <div className="form-group">
-              <label>Current Password</label>
-              <input
-                type="password"
-                name="current_password"
-                value={passwordData.current_password}
-                onChange={handleChange}
-                placeholder="Enter current password"
-                disabled={loading}
-              />
+          {status.error && (
+            <div className="password-change-alert password-change-alert-error">
+              <AlertTriangle size={18} />
+              <span>{status.error}</span>
+            </div>
+          )}
+
+          {status.success && (
+            <div className="password-change-alert password-change-alert-success">
+              <CheckCircle size={18} />
+              <span>{status.message}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="password-change-form">
+            <div className="password-change-form-group">
+              <label htmlFor="current_password" className="password-change-label">Current Password</label>
+              <div className="password-change-input-wrapper">
+                <input
+                  id="current_password"
+                  type={showPasswords.current ? "text" : "password"}
+                  name="current_password"
+                  value={formData.current_password}
+                  onChange={handleChange}
+                  placeholder="Enter your current password"
+                  disabled={status.loading}
+                  className="password-change-input"
+                />
+                <button 
+                  type="button"
+                  className="password-change-toggle-btn"
+                  onClick={() => togglePasswordVisibility("current")}
+                  tabIndex="-1"
+                >
+                  {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>New Password</label>
-              <input
-                type="password"
-                name="new_password"
-                value={passwordData.new_password}
-                onChange={handleChange}
-                placeholder="Enter new password"
-                disabled={loading}
-              />
+            <div className="password-change-form-group">
+              <label htmlFor="new_password" className="password-change-label">New Password</label>
+              <div className="password-change-input-wrapper">
+                <input
+                  id="new_password"
+                  type={showPasswords.new ? "text" : "password"}
+                  name="new_password"
+                  value={formData.new_password}
+                  onChange={handleChange}
+                  placeholder="Enter your new password"
+                  disabled={status.loading}
+                  className="password-change-input"
+                />
+                <button 
+                  type="button"
+                  className="password-change-toggle-btn"
+                  onClick={() => togglePasswordVisibility("new")}
+                  tabIndex="-1"
+                >
+                  {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Confirm New Password</label>
-              <input
-                type="password"
-                name="confirm_password"
-                value={passwordData.confirm_password}
-                onChange={handleChange}
-                placeholder="Confirm new password"
-                disabled={loading}
-              />
+            <div className="password-change-form-group">
+              <label htmlFor="confirm_password" className="password-change-label">Confirm New Password</label>
+              <div className="password-change-input-wrapper">
+                <input
+                  id="confirm_password"
+                  type={showPasswords.confirm ? "text" : "password"}
+                  name="confirm_password"
+                  value={formData.confirm_password}
+                  onChange={handleChange}
+                  placeholder="Confirm your new password"
+                  disabled={status.loading}
+                  className="password-change-input"
+                />
+                <button 
+                  type="button"
+                  className="password-change-toggle-btn"
+                  onClick={() => togglePasswordVisibility("confirm")}
+                  tabIndex="-1"
+                >
+                  {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
-            <div className="password-requirements">
-              <h3>Password Requirements</h3>
-              <ul className="requirements-list">
-                <li className={validationErrors.length ? "valid" : "invalid"}>
-                  At least 8 characters
-                </li>
-                <li className={validationErrors.uppercase ? "valid" : "invalid"}>
-                  At least one uppercase letter
-                </li>
-                <li className={validationErrors.lowercase ? "valid" : "invalid"}>
-                  At least one lowercase letter
-                </li>
-                <li className={validationErrors.number ? "valid" : "invalid"}>
-                  At least one number
-                </li>
-                <li className={validationErrors.special ? "valid" : "invalid"}>
-                  At least one special character
-                </li>
-                <li className={validationErrors.match ? "valid" : "invalid"}>
-                  Passwords match
-                </li>
-              </ul>
+            <div className="password-change-requirements">
+              <h3 className="password-change-requirements-title">Password Requirements</h3>
+              <div className="password-change-requirements-grid">
+                <PasswordRequirement met={validations.length} label="At least 8 characters" />
+                <PasswordRequirement met={validations.uppercase} label="At least one uppercase letter" />
+                <PasswordRequirement met={validations.lowercase} label="At least one lowercase letter" />
+                <PasswordRequirement met={validations.number} label="At least one number" />
+                <PasswordRequirement met={validations.special} label="At least one special character" />
+                <PasswordRequirement met={validations.match} label="Passwords match" />
+              </div>
             </div>
 
-            <div className="form-actions">
+            <div className="password-change-actions">
               <button
                 type="button"
-                className="cancel-btn"
-                onClick={() => navigate("/login")}
-                disabled={loading}
+                className="password-change-cancel-btn"
+                onClick={() => navigate(-1)}
+                disabled={status.loading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="submit-btn"
-                
-                disabled={loading || !allValidationsPassed()}
+                className={`password-change-submit-btn ${allValidationsPassed() ? "password-change-submit-btn-enabled" : "password-change-submit-btn-disabled"}`}
+                disabled={status.loading || !allValidationsPassed()}
               >
-                {loading ? "Updating..." : "Update Password"}
+                {status.loading ? "Updating..." : "Update Password"}
               </button>
             </div>
           </form>
-
-          {message && <p className="success-message">{message}</p>}
-          {error && <p className="error-message">{error}</p>}
         </div>
       </div>
       <Footer />
