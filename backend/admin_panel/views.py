@@ -187,14 +187,16 @@ from rest_framework import viewsets, permissions
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
 
+from rest_framework.permissions import IsAuthenticated
+
 class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset = ContactMessage.objects.all().order_by('-created_at')
     serializer_class = ContactMessageSerializer
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [permissions.AllowAny()]  # ✅ anyone can submit
-        return [permissions.IsAuthenticated()]  # 🔒 only admins can view
+            return [IsAuthenticated()]  # ✅ Only authenticated users can send
+        return [IsAuthenticated()]  # 🔒 Also needed for viewing
 
 
 

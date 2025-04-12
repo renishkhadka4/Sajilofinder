@@ -319,6 +319,11 @@ const geocodeAddress = async () => {
         api.get("/students/bookings/my-history/", { headers: { Authorization: `Bearer ${token}` }})
       ]);
 
+      const activeBookingsRes = await api.get("/hostel_owner/active-bookings/", {
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+   
       // Get rooms for each floor
       const floorData = await Promise.all(
         floorsRes.data.map(async (floor) => {
@@ -334,8 +339,9 @@ const geocodeAddress = async () => {
         feedbackList: feedbackRes.data,
         studentBookings: bookingsRes.data,
         currentUser: userRes.data,
+        activeBookings: activeBookingsRes.data.bookings,
         loading: false,
-        error: null
+        error: null,
       });
       
     } catch (err) {
@@ -478,18 +484,20 @@ const geocodeAddress = async () => {
     }
   };
 
+  
   // Room status helper
   const getRoomStatus = (roomId) => {
-    const activeBooking = data.studentBookings.find(
-      (b) => b.room.id === roomId && ["pending", "confirmed"].includes(b.status)
+    const isBookedByAnyone = data.activeBookings?.find(
+      (b) => b.room_id === roomId && ["confirmed", "pending"].includes(b.status)
     );
   
-    if (activeBooking) {
-      return activeBooking.status === "confirmed" ? "Booked" : "Pending";
+    if (isBookedByAnyone) {
+      return isBookedByAnyone.status === "confirmed" ? "Booked" : "Pending";
     }
   
     return "Available";
   };
+  
   
 
   // Chat handlers

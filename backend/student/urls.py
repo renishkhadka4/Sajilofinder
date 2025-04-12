@@ -41,7 +41,8 @@ urlpatterns = [
     path("profile/", StudentProfileView.as_view(), name="student-profile"),
     path("profile/request-email-change/", request_email_change, name="request-email-change"),
     path("profile/verify-email-change/", verify_email_change, name="verify-email-change"),
-    
+   
+
     
 
 

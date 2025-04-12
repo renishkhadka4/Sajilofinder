@@ -1140,3 +1140,24 @@ def delete_message(request, message_id):
         return Response({"message": "Message deleted successfully"}, status=204)
     except ChatMessage.DoesNotExist:
         return Response({"error": "Message not found"}, status=404)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_active_bookings(request):
+    """ Return all bookings with status 'confirmed' or 'pending' """
+    active_bookings = Booking.objects.filter(status__in=["confirmed", "pending"]).select_related("room")
+
+    booking_data = [
+        {
+            "id": booking.id,
+            "room_id": booking.room.id,
+            "status": booking.status,
+            "check_in": booking.check_in,
+            "check_out": booking.check_out,
+        }
+        for booking in active_bookings
+    ]
+
+    return Response({"bookings": booking_data}, status=200)

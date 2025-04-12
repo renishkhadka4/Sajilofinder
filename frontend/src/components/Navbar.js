@@ -26,11 +26,7 @@ const Navbar = () => {
     }
   }, []);
 
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    fetchNotifications();
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
 
   const handleClickOutside = (e) => {
     if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -53,6 +49,18 @@ const Navbar = () => {
       setLoading(false);
     }
   };
+  
+  // Now the effect will work
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchNotifications();
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+
 
   const formatTimeAgo = (timestamp) => {
     if (!timestamp) return "";

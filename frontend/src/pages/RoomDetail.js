@@ -56,10 +56,14 @@ if (match) {
           
         }
 
-        const allBookingRes = await api.get("/hostel_owner/bookings/");
-const bookingsForRoom = allBookingRes.data.filter(
-  (b) => b.room.id === parseInt(id) && !["rejected", "cancelled"].includes(b.status)
-);
+        const allBookingRes = await api.get("/hostel_owner/active-bookings/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        const bookingsForRoom = allBookingRes.data.bookings.filter(
+          (b) => b.room_id === parseInt(id)
+        );
+        
 
 if (bookingsForRoom.length > 0) {
   const isConfirmed = bookingsForRoom.some((b) => b.status === "confirmed");
@@ -95,15 +99,21 @@ if (bookingsForRoom.length > 0) {
       alert(" Please select both check-in and check-out dates.");
       return;
     }
-
+  
     if (!isBookingAllowed) {
       alert(" You cannot book a room due to recent cancellation.");
       return;
     }
-
+  
+    // ✅ Add this check here
+    if (roomStatus !== "Available") {
+      alert(" This room is already booked or awaiting approval.");
+      return;
+    }
+  
     try {
       const token = localStorage.getItem("token");
-
+  
       const bookingRes = await api.post(
         "/students/bookings/",
         {
@@ -113,7 +123,7 @@ if (bookingsForRoom.length > 0) {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       alert(" Booking request sent! You can now pay the security deposit.");
       setBookingId(bookingRes.data.id);
       setExistingBooking(bookingRes.data);
@@ -123,6 +133,7 @@ if (bookingsForRoom.length > 0) {
       alert(" Booking failed. Please try again.");
     }
   };
+  
 
   const handlePayment = async () => {
     if (!bookingId) {

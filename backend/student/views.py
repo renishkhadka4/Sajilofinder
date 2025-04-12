@@ -319,14 +319,20 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         if response.status_code == 200:
             data = response.json()
-            
-            # ✅ Save pidx to booking
             booking.pidx = data.get("pidx")
             booking.save()
-
             return Response(data, status=200)
         else:
-            return Response(response.json(), status=400)
+            try:
+                error_data = response.json()
+            except ValueError:
+                error_data = {
+                    "error": "Invalid response from Khalti.",
+                    "status_code": response.status_code,
+                    "text": response.text,
+                }
+            return Response(error_data, status=response.status_code)
+
 
 
 
@@ -377,7 +383,16 @@ class BookingViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"message": "Payment not completed", "status": data["status"]}, status=400)
         else:
-            return Response(response.json(), status=400)
+            try:
+                error_data = response.json()
+            except ValueError:
+                error_data = {
+                    "error": "Invalid response from Khalti.",
+                    "status_code": response.status_code,
+                    "text": response.text,
+                }
+            return Response(error_data, status=response.status_code)
+
 
 
 @api_view(['POST'])

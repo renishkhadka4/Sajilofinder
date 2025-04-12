@@ -4,7 +4,7 @@ import api from "../api/axios";
 import "../styles/Login.css";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 
-const Login = () => {
+const Login = ({ onLoginSuccess }) => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,18 @@ const Login = () => {
         } else if (role === "HostelOwner") {
           navigate("/dashboard");
         } else {
-          navigate("/");
+          if (onLoginSuccess) {
+            onLoginSuccess(); // used in popup
+          } else {
+            if (role === "Admin") {
+              navigate("/admin/Dashboard");
+            } else if (role === "HostelOwner") {
+              navigate("/dashboard");
+            } else {
+              navigate("/"); // fallback
+            }
+          }
+          
         }
       }, 500);
       

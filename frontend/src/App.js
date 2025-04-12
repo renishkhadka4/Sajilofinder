@@ -50,6 +50,16 @@ import StudentProfile from "./pages/StudentProfile";
 import StudentChangePassword from "./pages/StudentChangePassword";
 import HowItWorks from './pages/HowItWorks';
 import FAQs from './pages/FAQs';
+import HomePage from "./pages/Home";
+
+
+<Routes>
+  <Route path="/" element={<HomePage />} />
+  <Route path="/hostels" element={<Hostels />} />
+  <Route path="/hostel/:id" element={<HostelDetail />} />
+  {/* other routes like /about, /blogs, /contact */}
+</Routes>
+
 // Protect routes based on user roles
 const ProtectedRoute = ({ role, children }) => {
   const userRole = localStorage.getItem('role');
@@ -60,7 +70,7 @@ function App() {
   return (
     <Router>
       <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<HomePage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOTP />} />
         <Route path="/login" element={<Login />} />
@@ -102,6 +112,7 @@ function App() {
         <Route path="/student/change-password" element={<StudentChangePassword />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/faqs" element={<FAQs />} />
+        <Route path="home" element={<HomePage />} />
  
 
 <Route path="/admin/about-us" element={<AdminAboutUs />} />

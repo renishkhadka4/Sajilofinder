@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/Hostels.css";
 import Navbar from "../components/Navbar";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 const Hostels = () => {
+  const location = useLocation();
   const [hostels, setHostels] = useState([]);
   const [filteredHostels, setFilteredHostels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,19 +28,55 @@ const Hostels = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
+  const [nearby, setNearby] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 20000]);
   const [sortBy, setSortBy] = useState("recommended");
   const datePickerRef = useRef(null);
   const filterPanelRef = useRef(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const isLoggedIn = !!localStorage.getItem("token");
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
+
+  // Parse URL parameters when the component mounts or location changes
+// Parse URL parameters when the component mounts or location changes
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  
+  // Set search parameters from URL
+  if (params.has('search')) setSearchTerm(params.get('search'));
+  if (params.has('check_in')) setCheckInDate(params.get('check_in'));
+  if (params.has('check_out')) setCheckOutDate(params.get('check_out'));
+  if (params.has('nearby')) setNearby(params.get('nearby'));
+  
+  // Set hostel type if specified
+  if (params.has('category')) {
+    const category = params.get('category').toLowerCase();
+    if (category === 'boys' || category === 'girls') {
+      setFilter(category);
+    }
+  }
+  
+  // Set price range if specified
+  if (params.has('min_price') || params.has('max_price')) {
+    const minPrice = params.has('min_price') ? parseInt(params.get('min_price')) : 0;
+    const maxPrice = params.has('max_price') ? parseInt(params.get('max_price')) : 20000;
+    setPriceRange([minPrice, maxPrice]);
+  }
+  
+  // Execute search automatically when parameters are present
+  if (location.search) {
+    // This will trigger the useEffect that applies filters
+    console.log("Auto-executing search with URL parameters");
+  }
+}, [location]);
   useEffect(() => {
     const fetchHostels = async () => {
       setLoading(true);
       try {
         const response = await api.get("/hostel_owner/all-hostels/");
-        console.log("Fetched hostels:", response.data.length); // Debug: Log the number of hostels fetched
+        console.log("Fetched hostels:", response.data.length);
         setHostels(response.data);
         setFilteredHostels(response.data);
       } catch (error) {
@@ -63,7 +100,6 @@ const Hostels = () => {
   useEffect(() => {
     // Apply filters whenever filter criteria change
     let results = [...hostels]; // Create a copy to avoid mutating the original
-    console.log("Starting filter with", results.length, "hostels"); // Debug
     
     // Category filter
     if (filter !== "all") {
@@ -71,10 +107,9 @@ const Hostels = () => {
         const hostelCategory = hostel.category?.toLowerCase() || "";
         return hostelCategory === filter.toLowerCase();
       });
-      console.log("After category filter:", results.length); // Debug
     }
     
-    // Search term filter
+    // Search term filter (location, name, owner)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       results = results.filter(
@@ -83,10 +118,21 @@ const Hostels = () => {
           (hostel.address?.toLowerCase() || "").includes(term) ||
           (hostel.owner?.toLowerCase() || "").includes(term)
       );
-      console.log("After search filter:", results.length); // Debug
     }
     
-    // Price range filter - Fixed to handle different price formats
+    // Nearby filter (college, market, etc.)
+    if (nearby) {
+      const nearbyTerm = nearby.toLowerCase();
+      results = results.filter(hostel => {
+        const nearbyPlaces = hostel.nearby_places || [];
+        // Check if any nearby place contains the search term
+        return nearbyPlaces.some(place => 
+          place.toLowerCase().includes(nearbyTerm)
+        ) || (hostel.description?.toLowerCase() || "").includes(nearbyTerm);
+      });
+    }
+    
+    // Price range filter
     results = results.filter(hostel => {
       // First, attempt to get numeric price from rent_max
       let price = null;
@@ -107,7 +153,12 @@ const Hostels = () => {
       
       return price >= priceRange[0] && (priceRange[1] === 20000 || price <= priceRange[1]);
     });
-    console.log("After price filter:", results.length); // Debug
+    
+    // Date availability filter
+    if (checkInDate && checkOutDate) {
+      // Filter hostels based on availability for selected dates
+      results = results.filter(hostel => hostel.has_vacancy !== false);
+    }
     
     // Sort results
     switch(sortBy) {
@@ -133,8 +184,7 @@ const Hostels = () => {
     }
   
     setFilteredHostels(results);
-    console.log("Final filtered hostels:", results.length); // Debug
-  }, [hostels, filter, searchTerm, checkInDate, checkOutDate, priceRange, sortBy]);
+  }, [hostels, filter, searchTerm, nearby, checkInDate, checkOutDate, priceRange, sortBy]);
 
   // Helper function to extract price value from a hostel object
   const getPriceValue = (hostel) => {
@@ -157,6 +207,7 @@ const Hostels = () => {
     setSearchTerm("");
     setCheckInDate("");
     setCheckOutDate("");
+    setNearby("");
     setFilter("all");
     setPriceRange([0, 20000]);
     setSortBy("recommended");
@@ -290,6 +341,17 @@ const Hostels = () => {
             )}
           </div>
           
+          {/* Added nearby input field */}
+          <div className="search-input-group">
+            <input
+              type="text"
+              placeholder="Nearby college or market..."
+              value={nearby}
+              onChange={(e) => setNearby(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
           <button 
             type="button" 
             className="filter-toggle-btn"
@@ -401,7 +463,7 @@ const Hostels = () => {
             </div>
           </div>
           
-          {(searchTerm || checkInDate || checkOutDate || filter !== "all" || sortBy !== "recommended" || priceRange[0] > 0 || priceRange[1] < 20000) && (
+          {(searchTerm || nearby || checkInDate || checkOutDate || filter !== "all" || sortBy !== "recommended" || priceRange[0] > 0 || priceRange[1] < 20000) && (
             <button type="button" className="clear-all-filters-btn" onClick={clearFilters}>
               <X size={16} />
               Clear All Filters
@@ -419,6 +481,15 @@ const Hostels = () => {
                     <X size={14} />
                   </button>
                 </span>  
+              )}
+              
+              {nearby && (
+                <span className="active-filter-tag">
+                  Near: {nearby}
+                  <button onClick={() => setNearby("")} className="remove-filter">
+                    <X size={14} />
+                  </button>
+                </span>
               )}
               
               {checkInDate && checkOutDate && (
@@ -509,6 +580,7 @@ const Hostels = () => {
               {filteredHostels.map((hostel) => (
                 <div key={hostel.id} className="hostel-card">
                   <Link to={`/hostel/${hostel.id}`} className="hostel-link">
+
                     <div className="hostel-image-container">
                       <img
                         src={hostel.images && hostel.images.length > 0 ? hostel.images[0].image : "/images/placeholder-hostel.jpg"}
@@ -568,6 +640,22 @@ const Hostels = () => {
       {showMobileFilters && (
         <div className="filters-overlay" onClick={() => setShowMobileFilters(false)}></div>
       )}
+      {showLoginModal && (
+  <div className="modal-overlay" onClick={(e) => {
+    if (e.target.className === 'modal-overlay') setShowLoginModal(false);
+  }}>
+    <div className="modal">
+      <h2>Login Required</h2>
+      <p>You must login or register to view this hostel’s full details.</p>
+      <div className="modal-buttons">
+        <Link to="/login" className="login-btn">Login</Link>
+        <Link to="/register" className="register-btn">Register</Link>
+        <button onClick={() => setShowLoginModal(false)} className="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
       <Footer />
     </div>
   );

@@ -4,6 +4,7 @@ import '../styles/Communitys.css';
 import { toast } from 'react-toastify';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
 
 const StudentCommunity = () => {
   const [caption, setCaption] = useState('');
@@ -14,6 +15,7 @@ const StudentCommunity = () => {
   const [submitting, setSubmitting] = useState(false);
   const [commentMap, setCommentMap] = useState({});
   const [newComments, setNewComments] = useState({});
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -41,7 +43,13 @@ const StudentCommunity = () => {
       setLoading(false);
     }
   };
-
+ useEffect(() => {
+    const handleUnauthorized = () => {
+      setShowLoginModal(true); // ✅ Show modal on 401
+    };
+    window.addEventListener("unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("unauthorized", handleUnauthorized);
+  }, []);
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     if (!caption && !image) {
@@ -167,6 +175,23 @@ const StudentCommunity = () => {
   return (
     <div className='renish'>
         <Navbar />
+
+        {showLoginModal && (
+  <div className="modal-overlay" onClick={(e) => {
+    if (e.target.className === 'modal-overlay') setShowLoginModal(false);
+  }}>
+    <div className="modal">
+      <h2>Login Required </h2>
+      <div className="modal-buttons">
+        <Link to="/login" className="login-btn">Log In</Link>
+        <Link to="/register" className="register-btn">Create Account</Link>
+        <button className="cancel-btn" onClick={() => setShowLoginModal(false)}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     <div className="community-page">
  
       <div className="community-container">
@@ -249,6 +274,8 @@ const StudentCommunity = () => {
                   </button>
                 </div>
 
+ 
+
                 <div className="comments-section">
                   <h4>Comments</h4>
                   {commentMap[post.id] && commentMap[post.id].length > 0 ? (
@@ -275,6 +302,7 @@ const StudentCommunity = () => {
                   </div>
                 </div>
               </div>
+              
             ))
           )}
         </div>
