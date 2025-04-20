@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import api from "../api/axios";
 import "../styles/HostelDetail.css";
 import Navbar from "../components/Navbar";
-import StudentMessenger from "../pages/StudentMessenger";
+import StudentMessenger from "./StudentMessenger";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

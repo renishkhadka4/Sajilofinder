@@ -83,11 +83,15 @@ const ManageHostelDetail = () => {
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
-        setFormData((prev) => ({
-            ...prev,
-            images: files,
+        const newPreviews = files.map(file => ({
+          id: null, // New images don't have id yet
+          file,
+          previewUrl: URL.createObjectURL(file),
         }));
-    };
+      
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+      };
+      
 
     const handleImageDelete = async (imageId) => {
         if (!window.confirm("Are you sure you want to delete this image?")) return;
@@ -107,53 +111,55 @@ const ManageHostelDetail = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const updatedData = new FormData();
-
-            const baseFields = [
-                "name", "description", "address", "contact_number", "email", "city", "state",
-                "zip_code", "google_maps_link", "nearby_colleges", "nearby_markets", "visiting_hours",
-                "rent_min", "rent_max", "security_deposit"
-            ];
-
-            baseFields.forEach(field => {
-                updatedData.append(field, formData[field] || "");
-            });
-
-            const boolFields = [
-                "wifi", "parking", "laundry", "security_guard", "mess_service",
-                "attached_bathroom", "air_conditioning", "heater", "balcony",
-                "smoking_allowed", "alcohol_allowed", "pets_allowed"
-            ];
-
-            boolFields.forEach(field => {
-                updatedData.append(field, formData[field] ? "true" : "false");
-            });
-
-            if (formData.cancellation_policy) {
-                updatedData.append("cancellation_policy", JSON.stringify(formData.cancellation_policy));
+          const token = localStorage.getItem('token');
+          const updatedData = new FormData();
+      
+          const baseFields = [
+            "name", "description", "address", "contact_number", "email", "city", "state",
+            "zip_code", "google_maps_link", "nearby_colleges", "nearby_markets", "visiting_hours",
+            "rent_min", "rent_max", "security_deposit", "latitude", "longitude"
+          ];
+      
+          baseFields.forEach(field => {
+            updatedData.append(field, formData[field] || "");
+          });
+      
+          const boolFields = [
+            "wifi", "parking", "laundry", "security_guard", "mess_service",
+            "attached_bathroom", "air_conditioning", "heater", "balcony",
+            "smoking_allowed", "alcohol_allowed", "pets_allowed"
+          ];
+      
+          boolFields.forEach(field => {
+            updatedData.append(field, formData[field] ? "true" : "false");
+          });
+      
+          if (formData.cancellation_policy) {
+            updatedData.append("cancellation_policy", JSON.stringify(formData.cancellation_policy));
+          }
+      
+          // ✅ Attach NEW images only (file type)
+          imagePreviews.forEach((img) => {
+            if (img.file) {
+              updatedData.append('images', img.file);
             }
-
-            if (formData.images && formData.images.length > 0) {
-                formData.images.forEach((image, index) => {
-                    updatedData.append(`images[${index}]`, image);
-                });
-            }
-
-            await api.put(`/hostel_owner/hostels/${id}/`, updatedData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
-            showNotification("Hostel updated successfully!", "success");
-            fetchHostelDetails();
+          });
+      
+          await api.put(`/hostel_owner/hostels/${id}/`, updatedData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          });
+      
+          showNotification("Hostel updated successfully!", "success");
+          fetchHostelDetails();
         } catch (error) {
-            console.error("Error updating hostel:", error.response?.data || error.message);
-            showNotification(`Failed to update: ${JSON.stringify(error.response?.data || error.message)}`, "error");
+          console.error("Error updating hostel:", error.response?.data || error.message);
+          showNotification(`Failed to update: ${JSON.stringify(error.response?.data || error.message)}`, "error");
         }
-    };
+      };
+      
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this hostel?')) {
@@ -621,36 +627,37 @@ const ManageHostelDetail = () => {
                                                 ref={provided.innerRef}
                                                 {...provided.droppableProps}
                                             >
-                                                {imagePreviews.map((img, index) => (
-                                                    <Draggable key={img.id} draggableId={String(img.id)} index={index}>
-                                                        {(provided) => (
-                                                            <div
-                                                                className="image-preview-card"
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                {...provided.dragHandleProps}
-                                                                style={{
-                                                                    ...provided.draggableProps.style,
-                                                                }}
-                                                            >
-                                                                <div className="image-actions">
-                                                                    <button 
-                                                                        type="button"
-                                                                        className="delete-image-btn" 
-                                                                        onClick={() => handleImageDelete(img.id)}
-                                                                    >
-                                                                        <i className="fas fa-trash"></i>
-                                                                    </button>
-                                                                    <span className="image-order">{index === 0 ? 'Main' : `#${index + 1}`}</span>
-                                                                </div>
-                                                                <img src={img.image} alt={`Hostel view ${index + 1}`} />
-                                                                <div className="drag-handle">
-                                                                    <i className="fas fa-grip-lines"></i>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
-                                                ))}
+                                              {imagePreviews.map((img, index) => (
+  <Draggable key={index} draggableId={`img-${index}`} index={index}>
+    {(provided) => (
+      <div
+        className="image-preview-card"
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+      >
+        <div className="image-actions">
+          {img.id && (
+            <button
+              type="button"
+              className="delete-image-btn"
+              onClick={() => handleImageDelete(img.id)}
+            >
+              <i className="fas fa-trash"></i>
+            </button>
+          )}
+          <span className="image-order">{index === 0 ? 'Main' : `#${index + 1}`}</span>
+        </div>
+        <img src={img.previewUrl || img.image} alt={`Hostel view ${index + 1}`} />
+        <div className="drag-handle">
+          <i className="fas fa-grip-lines"></i>
+        </div>
+      </div>
+    )}
+  </Draggable>
+))}
+
+                                               
                                                 {provided.placeholder}
                                                 {imagePreviews.length === 0 && (
                                                     <div className="no-images">

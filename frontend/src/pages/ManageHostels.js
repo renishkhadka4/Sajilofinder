@@ -10,7 +10,7 @@ import Sidebar from '../pages/Sidebar';
 import '../styles/ManageHostels.css';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
-import { useRef } from 'react';
+
 
 import L from 'leaflet';
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
@@ -18,7 +18,7 @@ import markerIconPng from "leaflet/dist/images/marker-icon.png";
 
 
 
-const API_BASE_URL = "http://localhost:8000";
+
 
 const markerIcon = new L.Icon({
   iconUrl: markerIconPng,
@@ -100,13 +100,18 @@ const ManageHostels = () => {
     images: []
   });
 
-  useEffect(() => {
-    fetchHostels();
-  }, []);
+ // Fetch hostels when component mounts
+useEffect(() => {
+  fetchHostels();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-  useEffect(() => {
-    validateCurrentStep();
-  }, [formData, currentStep]);
+// Validate form when formData or step changes
+useEffect(() => {
+  validateCurrentStep();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [formData, currentStep]);
+
 
   const validateCurrentStep = () => {
     let isValid = false;
@@ -767,9 +772,9 @@ const ManageHostels = () => {
         )}
 
         {showModal && (
-          <div className="modal">
+          <div className="modals">
             <motion.form onSubmit={handleSubmit}
-              className="modal-form"
+              className="modal-forms"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.3 }}

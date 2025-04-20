@@ -151,7 +151,7 @@ const Login = ({ onLoginSuccess }) => {
           
           <form onSubmit={handleSubmit}>
             <div className="input-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email"></label>
               <input
                 id="email"
                 type="email"
@@ -164,7 +164,7 @@ const Login = ({ onLoginSuccess }) => {
             </div>
             
             <div className="input-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password"></label>
               <div className="password-input-container">
                 <input
                   id="password"

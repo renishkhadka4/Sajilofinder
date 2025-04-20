@@ -27,16 +27,17 @@ from .models import Post
 
 class PostSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
+    author_id = serializers.IntegerField(source='author.id', read_only=True)  # 🔥 ADD THIS LINE
     likes_count = serializers.IntegerField(source="likes.count", read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'caption', 'image', 'hashtags', 'hostel', 'created_at', 'author_name', 'likes_count']
-        read_only_fields = ['author_name', 'likes_count']
-
+        fields = ['id', 'caption', 'image', 'hashtags', 'hostel', 'created_at', 'author_name', 'author_id', 'likes_count']
+        read_only_fields = ['author_name', 'author_id', 'likes_count']
 
     def get_author_name(self, obj):
         return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+
 
 
 

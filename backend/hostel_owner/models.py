@@ -75,10 +75,12 @@ class Room(models.Model):
     is_available = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('floor', 'room_number')  # ✅ Only unique within floor
+        unique_together = ('floor', 'room_number')
 
     def __str__(self):
         return f"Room {self.room_number} - {'Available' if self.is_available else 'Unavailable'}"
+
+
 
 
 class RoomImage(models.Model):

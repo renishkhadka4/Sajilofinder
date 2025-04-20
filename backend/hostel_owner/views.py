@@ -169,15 +169,20 @@ def delete_conversation(request, hostel_id):
 
 
 class HostelViewSet(viewsets.ModelViewSet):
-    queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
-    def perform_create(self, serializer):
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.role == 'HostelOwner':
+            return Hostel.objects.filter(owner=user)
+        return Hostel.objects.none()
+    
+    def perform_update(self, serializer):
         images = self.request.FILES.getlist('images')
-        hostel = serializer.save(owner=self.request.user)
-        
+        hostel = serializer.save()
+
         if images:
             for img in images:
                 HostelImage.objects.create(hostel=hostel, image=img)

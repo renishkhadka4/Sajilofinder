@@ -90,8 +90,9 @@ User = get_user_model()
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'profile_picture']
+        model = CustomUser  # or your custom user model
+        fields = ['id', 'username', 'first_name', 'last_name', 'profile_picture']
+
 
     def update(self, instance, validated_data):
         """ Custom update to handle profile picture """

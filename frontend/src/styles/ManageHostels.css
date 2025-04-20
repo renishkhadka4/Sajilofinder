@@ -304,7 +304,7 @@
 }
 
 /* Modal styling */
-.modal {
+.modals {
   position: fixed;
   top: 0;
   left: 0;
@@ -318,7 +318,7 @@
   backdrop-filter: blur(4px);
 }
 
-.modal-form {
+.modal-forms {
   background: #fff;
   border-radius: 16px;
   padding: 2rem;

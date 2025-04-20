@@ -14,11 +14,22 @@ const HostelOwnerCommunity = () => {
   const [submitting, setSubmitting] = useState(false);
   const [commentMap, setCommentMap] = useState({});
   const [hostels, setHostels] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchHostels();
     fetchPosts();
   }, [hostelFilter]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await api.get('/auth/profile/'); 
+      setCurrentUser(res.data);
+    } catch {
+      toast.error('Failed to load user.');
+    }
+  };
 
   const fetchHostels = async () => {
     try {
@@ -77,6 +88,17 @@ const HostelOwnerCommunity = () => {
       toast.error('Error creating post');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await api.delete(`/community/posts/${postId}/`);
+      toast.success('✅ Post deleted successfully!');
+      fetchPosts();
+    } catch {
+      toast.error('❌ Error deleting post');
     }
   };
 
@@ -150,7 +172,7 @@ const HostelOwnerCommunity = () => {
 
   return (
     <div className="community-page">
-        <Sidebar />
+      <Sidebar />
       <div className="create-post">
         <h2>Create Post</h2>
         <form onSubmit={handlePostSubmit}>
@@ -167,44 +189,54 @@ const HostelOwnerCommunity = () => {
         </form>
       </div>
 
-
       <div className="post-feed">
-        {loading ? (
-          <p>Loading posts...</p>
+        {loading || !currentUser ? (
+          <p>Loading...</p>
         ) : posts.length === 0 ? (
           <p>No posts available.</p>
         ) : (
-          posts.map((post) => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <strong>{post.author_name}</strong>
-                <span>{new Date(post.created_at).toLocaleString()}</span>
-              </div>
-              <p>{highlightHashtags(post.caption)}</p>
-              {post.image && <img src={post.image} alt="Post" className="post-image" />}
-              <div className="post-actions">
-                <button onClick={() => handleLike(post.id)}>❤️ {post.likes_count}</button>
-              </div>
+          posts.map((post) => {
+            console.log("Current User:", currentUser);
+            console.log("Post Author ID:", post.author_id);
 
-              <div className="comments-section">
-                <h4>Comments</h4>
-                {commentMap[post.id] ? (
-                  renderComments(commentMap[post.id])
-                ) : (
-                  <p>No comments yet.</p>
-                )}
-                <div className="comment-form">
-                  <input
-                    type="text"
-                    value={commentMap[`new-${post.id}`] || ''}
-                    onChange={(e) => handleCommentChange(post.id, e.target.value)}
-                    placeholder="Write a comment..."
-                  />
-                  <button onClick={() => handleCommentSubmit(post.id)}>Post</button>
+            return (
+              <div key={post.id} className="post-card">
+                <div className="post-header">
+                  <strong>{post.author_name}</strong>
+                  <span>{new Date(post.created_at).toLocaleString()}</span>
+                </div>
+                <p>{highlightHashtags(post.caption)}</p>
+                {post.image && <img src={post.image} alt="Post" className="post-image" />}
+
+                <div className="post-actions">
+                  <button onClick={() => handleLike(post.id)}>❤️ {post.likes_count}</button>
+                  {currentUser && post.author_id === currentUser.id && (
+                    <button className="delete-button" onClick={() => handleDeletePost(post.id)}>
+                      🗑️ Delete
+                    </button>
+                  )}
+                </div>
+
+                <div className="comments-section">
+                  <h4>Comments</h4>
+                  {commentMap[post.id] ? (
+                    renderComments(commentMap[post.id])
+                  ) : (
+                    <p>No comments yet.</p>
+                  )}
+                  <div className="comment-form">
+                    <input
+                      type="text"
+                      value={commentMap[`new-${post.id}`] || ''}
+                      onChange={(e) => handleCommentChange(post.id, e.target.value)}
+                      placeholder="Write a comment..."
+                    />
+                    <button onClick={() => handleCommentSubmit(post.id)}>Post</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { Bar, Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 import '../styles/Dashboard.css';
-import Sidebar from '../pages/Sidebar';
+import Sidebar from './Sidebar';
 
 
 const Dashboard = () => {

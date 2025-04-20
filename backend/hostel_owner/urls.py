@@ -13,12 +13,12 @@ from .views import get_all_hostel_students
 from .views import get_students_with_hostels,delete_conversation,get_active_bookings
 # Set up the router to handle common ViewSets
 router = DefaultRouter()
-router.register(r'hostels', HostelViewSet)
+
 router.register(r'rooms', RoomViewSet)
 router.register(r'bookings', BookingViewSet, basename="booking")
 router.register(r'feedback', FeedbackViewSet)
 router.register(r'floors', FloorViewSet)
-
+router.register(r'hostels', HostelViewSet, basename='hostel')
 urlpatterns = [
     # Include the default router URLs
     path('', include(router.urls)),

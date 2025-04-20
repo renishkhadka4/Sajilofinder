@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
-import Sidebar from "../pages/Sidebar";
+import Sidebar from "./Sidebar";
 import "../styles/Feedback.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

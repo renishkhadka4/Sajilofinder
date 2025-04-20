@@ -304,8 +304,9 @@ const HomePage = () => {
         {renderStarRating(hostel.rating)}
         {renderAmenities(hostel)}
         <div className="hostel-price">
-          {formatPrice(hostel.price)} / month
-        </div>
+  {formatPrice(hostel.rent_max ?? hostel.price)} / month
+</div>
+
         {isLoggedIn ? (
           <Link to={`/hostel/${hostel.id}`} className="view-details-btn">
             View Details
@@ -553,58 +554,11 @@ const HomePage = () => {
       {/* FAQs Section */}
       <div className="section-header">
         <h2>Got Questions?</h2>
+        
         <p>We've answered the most common queries about booking, payments, and listings.</p>
         <Link to="/faqs" className="view-all-btn">Visit FAQs</Link>
       </div>
-      
-      {/* Testimonials Section */}
-      <div className="testimonials-section">
-        <div className="section-header">
-          <h2>What Our Users Say</h2>
-          <p>Hear from students and professionals who found their perfect accommodation using Sajilo Finder</p>
-        </div>
-        
-        <div className="testimonials-container">
-          <div className="testimonial-card animate-fade-in">
-            <div className="testimonial-text">
-              Sajilo Finder made my transition to Kathmandu so much easier. I found a safe girls hostel near my college within my budget. The reviews were honest and helped me make a good choice.
-            </div>
-            <div className="testimonial-author">
-              <img src="/images/testimonial1.jpg" alt="Samiksha" className="author-avatar" loading="lazy" />
-              <div className="author-info">
-                <h4>Samiksha Sharma</h4>
-                <p>BBA Student, Kathmandu</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="testimonial-card animate-fade-in">
-            <div className="testimonial-text">
-              As someone new to the city, I was worried about finding good accommodation. Sajilo Finder's verified listings and direct chat with hostel owners gave me confidence in my decision.
-            </div>
-            <div className="testimonial-author">
-              <img src="/images/testimonial2.jpg" alt="Anish" className="author-avatar" loading="lazy" />
-              <div className="author-info">
-                <h4>Anish Thapa</h4>
-                <p>Engineering Student, Lalitpur</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="testimonial-card animate-fade-in">
-            <div className="testimonial-text">
-              The filtering options on Sajilo Finder are fantastic! I could narrow down hostels based on my exact requirements like WiFi, mess facility, and distance from my university.
-            </div>
-            <div className="testimonial-author">
-              <img src="/images/testimonial3.jpg" alt="Priya" className="author-avatar" loading="lazy" />
-              <div className="author-info">
-                <h4>Priya Gurung</h4>
-                <p>Medical Student, Bhaktapur</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+     
 
       {/* Login Modal */}
       {showLoginModal && <LoginModal />}
