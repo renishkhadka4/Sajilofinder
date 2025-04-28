@@ -47,7 +47,7 @@ APPEND_SLASH = True
 from decouple import config
 # settings.py
 
-KHALTI_SECRET_KEY = "c6270f9dff004196a7d8c91585568426"  # ✅ Live Secret Key from test-admin.khalti.com
+KHALTI_SECRET_KEY = "c6270f9dff004196a7d8c91585568426"  #  Live Secret Key from test-admin.khalti.com
 
 KHALTI_PUBLIC_KEY = config('KHALTI_PUBLIC_KEY')
 
@@ -165,18 +165,18 @@ SIMPLE_JWT = {
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # ✅ Load environment variables from .env file
+load_dotenv()  #  Load environment variables from .env file
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-# ✅ Use your email credentials
+#  Use your email credentials
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'sajilofinder@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'jfyfbcpxtmtrxrnx')  # ✅ App Password
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'jfyfbcpxtmtrxrnx')  #  App Password
 
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # ✅ Set default sender email
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  #  Set default sender email
 
 
 #  Default primary key field type

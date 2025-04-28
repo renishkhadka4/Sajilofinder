@@ -1,83 +1,95 @@
-from rest_framework import generics, status
+# -------------------------------
+# Core Imports
+# -------------------------------
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, VerifyOTPSerializer, LoginSerializer
-from rest_framework.decorators import api_view
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.utils import timezone
+from django.conf import settings
+
+# Models and Serializers
+from .models import CustomUser
+from .serializers import (
+    RegisterSerializer, VerifyOTPSerializer, LoginSerializer,
+    UserProfileSerializer, ChangePasswordSerializer
+)
+from .token import CustomTokenObtainPairSerializer
+
+
+# User Registration, Login, and OTP Verification
+
 class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
+    serializer_class = RegisterSerializer  # Handles user registration
 
 class VerifyOTPView(generics.GenericAPIView):
-    serializer_class = VerifyOTPSerializer
+    serializer_class = VerifyOTPSerializer  # Handles OTP verification
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             return Response({"message": "Account verified successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-from django.contrib.auth import get_user_model
 
-CustomUser = get_user_model()  #  Ensure CustomUser is imported
+CustomUser = get_user_model()  # Custom User Model (Safe way)
 
 class LoginView(generics.GenericAPIView):
-    serializer_class = LoginSerializer
+    serializer_class = LoginSerializer  # Handles login and token generation
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        # Validate the incoming data
         if serializer.is_valid():
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
-            
-            # Manually fetch the user using email
+
+            # Fetch user manually by email
             user = CustomUser.objects.filter(email=email).first()
-            # Generate refresh and access tokens for the user
+
             if user and user.check_password(password):
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
-                    'role': user.role,  # Include user role in the response
-                    'username': user.username  # Include username in the response
+                    'role': user.role,
+                    'username': user.username
                 }, status=status.HTTP_200_OK)
-        # If credentials are invalid, return an error
+
         return Response({"error": "Invalid email or password"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-from rest_framework import generics, permissions
-from .serializers import UserProfileSerializer, ChangePasswordSerializer
-from django.contrib.auth import get_user_model
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+# User Profile Management
 
-User = get_user_model()
 
 class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user 
+        return self.request.user
 
     def put(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)  
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully!"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    
-from rest_framework import status
-from rest_framework.views import APIView  
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+# Password Management (Change and Reset)
 
 
 class ChangePasswordView(APIView):
-    """
-    API endpoint for changing user password.
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request):
@@ -88,27 +100,11 @@ class ChangePasswordView(APIView):
             return Response({"message": "Password updated successfully!"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserProfileView(generics.RetrieveUpdateAPIView):
-    """
-    API endpoint for retrieving and updating user profile.
-    """
-    serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user  
-    
+# Forgot Password and Reset Password via Token
 
-    from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.core.mail import send_mail
-from django.utils.crypto import get_random_string
-from django.utils import timezone
-from django.conf import settings
-from .models import CustomUser
 
-# In-memory store for simplicity (you can use model or cache in prod)
+# In-memory token store (temporary for password reset)
 RESET_TOKENS = {}
 
 @api_view(['POST'])
@@ -119,10 +115,13 @@ def send_reset_email(request):
 
     try:
         user = CustomUser.objects.get(email=email)
-        token = get_random_string(30)
-        RESET_TOKENS[token] = {"user_id": user.id, "expires_at": timezone.now() + timezone.timedelta(minutes=15)}
+        token = get_random_string(30)  # Generate random reset token
+        RESET_TOKENS[token] = {
+            "user_id": user.id,
+            "expires_at": timezone.now() + timezone.timedelta(minutes=15)
+        }
 
-        reset_link = f"http://localhost:3000/reset-password/{token}/"  # 🔁 Adjust frontend URL
+        reset_link = f"http://localhost:3000/reset-password/{token}/"  # Adjust your frontend URL here
         send_mail(
             "Reset Your Password",
             f"Click the link to reset your password:\n\n{reset_link}\n\nThis link expires in 15 minutes.",
@@ -151,7 +150,7 @@ def reset_password(request):
         user.set_password(new_password)
         user.save()
 
-        # Clean up used token
+        # Clean up the token after successful reset
         del RESET_TOKENS[token]
 
         return Response({"message": "Password reset successful!"})
@@ -159,8 +158,8 @@ def reset_password(request):
         return Response({"error": "User not found"}, status=404)
 
 
+# Custom Token Authentication (JWT)
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .token import CustomTokenObtainPairSerializer
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer

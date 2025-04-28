@@ -1,32 +1,33 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+# Custom user model extending Django's AbstractUser
 class CustomUser(AbstractUser):
-    # Define user roles
+    # --- Role definitions ---
     STUDENT = 'Student'
     HOSTEL_OWNER = 'HostelOwner'
     ADMIN = 'Admin'
 
-    # Choices available for the 'role' field
+    # Available role choices for the 'role' field
     ROLE_CHOICES = [
         (STUDENT, 'Student'),
         (HOSTEL_OWNER, 'Hostel Owner'),
         (ADMIN, 'Admin'),
     ]
 
-    # Additional fields for the custom user
-    email = models.EmailField(unique=True)  # Use email as unique identifier for login
-    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default=STUDENT)  # Role of the user
-    is_verified = models.BooleanField(default=False)  # Email/Account verification status
-    otp = models.CharField(max_length=6, blank=True, null=True)  # OTP for verification (optional)
-    otp_created_at = models.DateTimeField(null=True, blank=True)  # Timestamp when OTP was generated
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)  # Profile picture
+    # --- Additional custom fields ---
+    email = models.EmailField(unique=True)  # Use email as the unique login identifier
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default=STUDENT)  # Role assigned to the user
+    is_verified = models.BooleanField(default=False)  # Whether email/account is verified
+    otp = models.CharField(max_length=6, blank=True, null=True)  # One-Time Password for email/phone verification
+    otp_created_at = models.DateTimeField(null=True, blank=True)  # Time when OTP was created
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)  # Optional profile image upload
 
-    # Set email as the field used for authentication
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # Username is still required for registration
+    # --- Authentication settings ---
+    USERNAME_FIELD = 'email'  # Use email for login instead of username
+    REQUIRED_FIELDS = ['username']  # Username is still required during signup
 
-    # Helper methods to check user roles
+    # --- Helper methods to check user roles ---
     def is_admin(self):
         return self.role == self.ADMIN
 
@@ -35,6 +36,6 @@ class CustomUser(AbstractUser):
 
     def is_student(self):
         return self.role == self.STUDENT
-    
-    # Track the number of unread chat messages (optional feature for chat systems)
-    unread_messages = models.IntegerField(default=0)
+
+    # --- Optional Feature ---
+    unread_messages = models.IntegerField(default=0)  # Track the number of unread chat messages for chat systems

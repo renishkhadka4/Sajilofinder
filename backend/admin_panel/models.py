@@ -1,6 +1,9 @@
 from django.db import models
 from api.models import CustomUser
 
+
+# User Report Model
+
 class UserReport(models.Model):
     REPORT_TYPE_CHOICES = [
         ('hostel', 'Hostel'),
@@ -13,18 +16,15 @@ class UserReport(models.Model):
     reported_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reports_received', null=True, blank=True)
     report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
     description = models.TextField()
-    status = models.CharField(max_length=20, default='pending')  # pending, reviewed, resolved
     reason = models.TextField(default="General complaint")
+    status = models.CharField(max_length=20, default='pending')  # Status can be pending, reviewed, resolved
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Report by {self.reporter.username} - {self.report_type}"
 
 
-# admin_panel/models.py
-
-from django.db import models
-from api.models import CustomUser
+# Blog Model
 
 class Blog(models.Model):
     title = models.CharField(max_length=200)
@@ -36,6 +36,8 @@ class Blog(models.Model):
         return self.title
 
 
+# Contact Message Model
+
 class ContactMessage(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -46,8 +48,7 @@ class ContactMessage(models.Model):
         return f"Message from {self.name}"
 
 
-
-from django.db import models
+# About Us Model
 
 class AboutUs(models.Model):
     title = models.CharField(max_length=255)
@@ -60,14 +61,14 @@ class AboutUs(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def service_list(self):
+        # Splits the comma-separated services into a clean list
         return [s.strip() for s in self.services.split(',') if s.strip()]
 
     def __str__(self):
         return self.title
 
 
-from django.db import models
-from api.models import CustomUser
+# Admin Notification Model
 
 class AdminNotification(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_notifications')

@@ -1,34 +1,44 @@
+
+#  Core Imports
+import logging
+import requests
+import pandas as pd
 from datetime import datetime, timedelta
 from io import BytesIO
-import logging
-import pandas as pd
-
-from django.core.mail import send_mail
+#  Django Imports
 from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import Count, Avg, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
 from django.utils.timezone import now
 from django.utils import timezone
+#  Django Decorators
 from django.views.decorators.cache import never_cache
-
-from rest_framework import viewsets, permissions, status, generics
+#  DRF Core Imports
+from rest_framework import viewsets, permissions, status, generics, serializers
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+#  Models and Serializers
 from api.models import CustomUser
 from student.models import StudentProfile, Notification
-from hostel_owner.models import Booking, Room, Floor, Hostel, Feedback
-from .models import HostelImage, RoomImage, ChatMessage, OwnerNotification
+from hostel_owner.models import Booking, Room, Floor, Hostel, Feedback, Payment, ChatMessage, HostelImage, RoomImage, OwnerNotification
+
 from .serializers import (
     HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer,
-    HostelImageSerializer, FloorSerializer, RoomImageSerializer, OwnerNotificationSerializer
+    HostelImageSerializer, FloorSerializer, RoomImageSerializer, OwnerNotificationSerializer, ChatImageSerializer
 )
+from api.serializers import CustomUserSerializer
+#  Permissions
 from rest_framework.permissions import IsAuthenticated
 logger = logging.getLogger(__name__)
+#  Setup Dynamic User Model
+from django.contrib.auth import get_user_model
+User = get_user_model()
+# student/views.py
+
 
 
 def send_booking_email(booking, status):
@@ -93,7 +103,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         user = request.user
         parent_id = request.data.get("parent")
 
-        # ✅ Handle reply logic
+        #  Handle reply logic
         if parent_id:
             parent = get_object_or_404(Feedback, id=parent_id)
             reply = Feedback.objects.create(
@@ -105,7 +115,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             )
             return Response(FeedbackSerializer(reply).data, status=201)
 
-        # ✅ Handle student feedback
+        # Handle student feedback
         hostel_id = request.data.get("hostel")
         rating = request.data.get("rating")
         comment = request.data.get("comment")
@@ -159,16 +169,6 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         feedback.delete()
         return Response({"message": "Reply deleted"}, status=status.HTTP_204_NO_CONTENT)
     
-
-
-
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from .models import ChatMessage  # assuming image is saved in this model
-from .serializers import ChatImageSerializer  # or you can create one
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -313,10 +313,7 @@ class HostelViewSet(viewsets.ModelViewSet):
         return Response({"message": "Image order updated successfully."}, status=200)
     
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+
 
 class ChatImageUploadView(APIView):
     parser_classes = [MultiPartParser]
@@ -330,37 +327,7 @@ class ChatImageUploadView(APIView):
         instance = ChatMessage.objects.create(sender=request.user, message="[Image]", image=image)
         return Response({"image_url": instance.image.url})
 
-from datetime import datetime, timedelta
-from io import BytesIO
-import logging
-import pandas as pd
 
-from django.core.mail import send_mail
-from django.conf import settings
-from django.db.models import Count, Avg, Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.utils.timezone import now
-from django.utils import timezone
-from django.views.decorators.cache import never_cache
-
-from rest_framework import viewsets, permissions, status, generics
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from api.models import CustomUser
-from student.models import StudentProfile, Notification
-from hostel_owner.models import Booking, Room, Floor, Hostel, Feedback
-from .models import HostelImage, RoomImage, ChatMessage, OwnerNotification
-from .serializers import (
-    HostelSerializer, RoomSerializer, BookingSerializer, FeedbackSerializer,
-    HostelImageSerializer, FloorSerializer, RoomImageSerializer, OwnerNotificationSerializer
-)
-from rest_framework.permissions import IsAuthenticated
-logger = logging.getLogger(__name__)
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
@@ -476,11 +443,7 @@ def get_current_user(request):
         "first_name": user.first_name,
         "last_name": user.last_name,
     })
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Hostel
-from .serializers import HostelSerializer
+
 
 @api_view(['GET'])
 
@@ -490,7 +453,7 @@ def get_all_verified_hostels(request):
         serializer = HostelSerializer(hostels, many=True, context={"request": request})
         return Response(serializer.data)
     except Exception as e:
-        print("❌ Error fetching hostels:", str(e))
+        print(" Error fetching hostels:", str(e))
         return Response({"error": str(e)}, status=500)
 
 
@@ -503,17 +466,8 @@ def get_all_hostels(request):
 
 
 
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.utils import timezone
-from django.conf import settings
-import requests
 
-from hostel_owner.models import Booking, Payment
-from hostel_owner.serializers import BookingSerializer
-from hostel_owner.views import send_booking_email
-from rest_framework.decorators import action
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
@@ -562,7 +516,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.status = 'rejected'
             booking.save()
 
-            print(f"❌ Booking {booking.id} rejected. Calling send_booking_email()")
+            print(f" Booking {booking.id} rejected. Calling send_booking_email()")
             send_booking_email(booking, "Rejected")
             return Response({'message': 'Booking rejected, email sent!'}, status=status.HTTP_200_OK)
 
@@ -827,12 +781,7 @@ class DashboardView(APIView):
             "available_rooms": available_rooms,
         }, status=200)
 
-# student/views.py
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from api.models import CustomUser
-from api.serializers import CustomUserSerializer
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -850,7 +799,7 @@ def get_all_hostel_students(request):
     hostels = Hostel.objects.filter(owner=owner)
     bookings = Booking.objects.filter(room__floor__hostel__in=hostels).select_related('student')
     
-    # ✅ remove duplicates by ID
+    #  remove duplicates by ID
     unique_students = {booking.student.id: booking.student for booking in bookings if booking.student}
     serializer = CustomUserSerializer(unique_students.values(), many=True)
     return Response({"students": serializer.data})
@@ -1073,39 +1022,6 @@ class ChatHistoryView(APIView):
 
         return Response(chat_data)
 
-# hostel_owner/views.py
-
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from .models import ChatMessage
-from api.models import CustomUser
-# ✅ Correct:
-from api.serializers import CustomUserSerializer
-from .serializers import HostelSerializer
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from api.serializers import CustomUserSerializer
-from .serializers import HostelSerializer
-from hostel_owner.models import ChatMessage, Hostel
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-from hostel_owner.models import ChatMessage, Hostel
-from api.models import CustomUser
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-
-# views.py (in hostel_owner app)
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import ChatMessage, Hostel
-from api.models import CustomUser
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1131,10 +1047,6 @@ def get_students_with_hostels(request):
 
 
 
-
-from django.core.mail import send_mail
-from django.conf import settings
-import logging
 
 
 

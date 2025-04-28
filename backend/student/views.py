@@ -1,34 +1,57 @@
-from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
+# ---------------------------------------------------------
+# Student App - Views Imports (Cleaned)
+# ---------------------------------------------------------
+
+# Django imports
+import logging
+import requests
+from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from django.utils.crypto import get_random_string
+from django.db import models
+
+
+# DRF imports
+from rest_framework import viewsets, generics, permissions, status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from hostel_owner.models import Booking, Room, Hostel
-from .models import StudentProfile
-from .serializers import StudentProfileSerializer, BookingSerializer, HostelSerializer
-from rest_framework import serializers
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
+
+# Models
+from hostel_owner.models import Booking, Room, Hostel, Feedback, ChatMessage, Payment
+from student.models import StudentProfile, Notification
+from api.models import CustomUser
+
+# Serializers
+from student.serializers import (
+    StudentProfileSerializer,
+    BookingSerializer,
+    HostelSerializer,
+    FeedbackSerializer,
+)
+from hostel_owner.serializers import HostelSerializer
+
+# Enable logging
+logger = logging.getLogger(__name__)
+
 #  Search & Filter Hostels
 class HostelSearchView(ListAPIView):
     queryset = Hostel.objects.all()
     serializer_class = HostelSerializer
     search_fields = ['location', 'name', 'address', 'description']
 
-from rest_framework.permissions import IsAuthenticated
 
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
-from hostel_owner.models import Room, Booking  #  Import from hostel_owner instead of student
-
-from .serializers import BookingSerializer
 
 class BookHostelView(APIView):
     permission_classes = [IsAuthenticated]  
 
     def post(self, request):
         #  Debugging
-        print(f"📌 DEBUG: User - {request.user} (ID: {request.user.id}, Role: {request.user.role})")
+        print(f" DEBUG: User - {request.user} (ID: {request.user.id}, Role: {request.user.role})")
 
         if not request.user or not request.user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -62,16 +85,6 @@ class BookHostelView(APIView):
             return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-
-
-# views.py (in student app)
-# student/views.py
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from hostel_owner.models import ChatMessage
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def student_chat_history(request, hostel_id):
@@ -102,11 +115,6 @@ def student_chat_history(request, hostel_id):
     return Response(chat_data)
 
 
-
-from rest_framework import generics, permissions
-from .serializers import StudentProfileSerializer
-from django.contrib.auth import get_user_model
-
 User = get_user_model()
 
 class StudentProfileView(generics.RetrieveUpdateAPIView):
@@ -115,13 +123,7 @@ class StudentProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user  # returns the logged-in student
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.utils.crypto import get_random_string
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.conf import settings
+
 
 @api_view(["POST"])
 def request_email_change(request):
@@ -164,50 +166,7 @@ def verify_email_change(request):
     return Response({"message": "Email verified successfully!"}, status=200)
 
 
-from rest_framework import viewsets
-from hostel_owner.models import Booking
-from student.serializers import BookingSerializer
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
 
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from hostel_owner.models import Room, Booking
-from student.serializers import BookingSerializer
-from rest_framework import serializers  #  Fix missing import
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
-from hostel_owner.models import Booking
-from student.serializers import BookingSerializer
-from django.core.mail import send_mail
-from django.conf import settings
-import logging
-
-from rest_framework import viewsets, status, serializers
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.response import Response
-from django.core.mail import send_mail
-from django.conf import settings
-import logging
-from hostel_owner.models import Booking, Room
-from student.serializers import BookingSerializer
-from rest_framework.permissions import IsAuthenticated
-
-#  Enable logging
-logger = logging.getLogger(__name__)
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.utils import timezone
-from django.conf import settings
-import requests
-from hostel_owner.models import Payment
-
-
-logger = logging.getLogger(__name__)
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -413,7 +372,7 @@ def verify_khalti_payment(request):
 
         response = requests.post("https://dev.khalti.com/api/v2/epayment/lookup/", json=payload, headers=headers)
 
-        print("🔍 Khalti Response:", response.status_code, response.json())
+        print("Khalti Response:", response.status_code, response.json())
 
         if response.status_code == 200:
             data = response.json()
@@ -448,27 +407,8 @@ def verify_khalti_payment(request):
         return Response(response.json(), status=response.status_code)
 
     except Exception as e:
-        print("❌ Exception during Khalti verification:", str(e))
+        print(" Exception during Khalti verification:", str(e))
         return Response({"error": "Something went wrong while verifying payment."}, status=500)
-
-
-
-
-        
-    
-        
-    
-
-
-
-        
-# student/views.py
-
-from hostel_owner.models import Hostel
-from hostel_owner.serializers import HostelSerializer
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
 
 @api_view(['GET'])
 def student_hostel_detail(request, hostel_id):
@@ -483,17 +423,6 @@ def student_hostel_detail(request, hostel_id):
         return Response({"error": "Hostel not found or not verified"}, status=404)
  
 
-
-
-        
-    
-
-
-from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAuthenticated
-from hostel_owner.models import Booking
-from student.serializers import BookingSerializer
-from rest_framework.response import Response
 
 class StudentBookingHistoryView(ListAPIView):
     serializer_class = BookingSerializer
@@ -540,12 +469,6 @@ class StudentProfileView(RetrieveUpdateAPIView):
         return profile
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from hostel_owner.models import Booking, Feedback, Hostel
-from .serializers import FeedbackSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -623,10 +546,7 @@ def delete_feedback(request, pk):
     return Response({'message': 'Feedback deleted!'})
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Notification
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -700,10 +620,7 @@ def student_chat_history(request, hostel_id):
     return Response(chat_data)
 
 
-# student/views.py
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -1,8 +1,16 @@
+
+# Student App - Models
+
+
 from django.db import models
 from django.contrib.auth import get_user_model
-from api.models import CustomUser 
+from api.models import CustomUser
 
+#  Set dynamic user model
 User = get_user_model()
+
+
+#  StudentProfile Model
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="student_profile")
@@ -13,9 +21,7 @@ class StudentProfile(models.Model):
         return self.user.username
 
 
-from django.db import models
-from api.models import CustomUser
-
+#  Notification Model (for Students)
 class Notification(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='student_notifications')
     message = models.CharField(max_length=255)
