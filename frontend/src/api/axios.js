@@ -29,7 +29,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh');
       if (!refreshToken) {
         console.error('No refresh token available.');
-        window.dispatchEvent(new CustomEvent("unauthorized")); // 👈 trigger modal login
+        window.dispatchEvent(new CustomEvent("unauthorized")); //  trigger modal login
         return Promise.reject(error);
       }
 
@@ -46,7 +46,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('Refresh token failed:', refreshError);
         localStorage.clear();
-        window.dispatchEvent(new CustomEvent("unauthorized")); // 👈 trigger modal login
+        window.dispatchEvent(new CustomEvent("unauthorized")); //  trigger modal login
         return Promise.reject(refreshError);
       }
     }
