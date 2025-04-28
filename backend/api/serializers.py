@@ -60,28 +60,34 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 class VerifyOTPSerializer(serializers.Serializer):
+    # Fields required for verifying OTP
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
     def validate(self, data):
+        # Fetch user matching the given email and otp
         user = CustomUser.objects.filter(email=data['email'], otp=data['otp']).first()
 
         if not user:
             raise serializers.ValidationError("Invalid OTP or email.")
 
+        # Ensure OTP timestamp is set
         if not user.otp_created_at:
             raise serializers.ValidationError("OTP timestamp not set. Please request a new OTP.")
 
+        # Check if OTP is expired (valid for only 5 minutes)
         otp_expiry_time = user.otp_created_at + timedelta(minutes=5)
         if timezone.now() > otp_expiry_time:
             raise serializers.ValidationError("OTP has expired. Please request a new one.")
 
+        # Mark user as verified and clear OTP fields
         user.is_verified = True
         user.otp = ''
         user.otp_created_at = None
         user.save()
 
         return data
+
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model

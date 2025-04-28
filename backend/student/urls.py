@@ -16,7 +16,7 @@ from .views import verify_khalti_payment
 
 from .views import student_chat_history
 from .views import student_profile,get_hostel_owner_by_hostel
-from .views import StudentProfileView, request_email_change, verify_email_change
+from .views import StudentProfileView, request_email_change, verify_email_change,student_hostel_detail
 
 router = DefaultRouter()
 
@@ -41,6 +41,8 @@ urlpatterns = [
     path("profile/", StudentProfileView.as_view(), name="student-profile"),
     path("profile/request-email-change/", request_email_change, name="request-email-change"),
     path("profile/verify-email-change/", verify_email_change, name="verify-email-change"),
+    path('hostels/<int:hostel_id>/', student_hostel_detail, name='student-hostel-detail'),
+
    
 
     

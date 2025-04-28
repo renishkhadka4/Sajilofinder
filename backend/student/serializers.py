@@ -29,7 +29,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
     room = serializers.SerializerMethodField()
-
+    
     def get_student(self, obj):
         return {
             "id": obj.student.id,
@@ -53,13 +53,16 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ["id", "student", "room", "check_in", "check_out", "status", "created_at"]
+        ref_name = "StudentBookingSerializer"  #  PUT IT HERE inside Meta
+
 
 
 class HostelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hostel
         fields = '__all__'
-
+        ref_name = "StudentHostelSerializer"
+        
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback

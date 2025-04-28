@@ -38,6 +38,8 @@ class HostelSerializer(serializers.ModelSerializer):
             "images", "category","latitude","longitude",
 
         ]
+        ref_name = "HostelOwnerHostelSerializer"
+
 
 class RoomImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -56,16 +58,34 @@ class RoomSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
     room = serializers.SerializerMethodField()
-
+    
     def get_student(self, obj):
         return {"id": obj.student.id, "username": obj.student.username, "email": obj.student.email} if obj.student else None
 
     def get_room(self, obj):
-        return {"id": obj.room.id, "room_number": obj.room.room_number} if obj.room else None
+        try:
+            return {
+                "id": obj.room.id,
+                "room_number": obj.room.room_number,
+                "floor": {
+                    "id": obj.room.floor.id,
+                    "hostel": {
+                        "id": obj.room.floor.hostel.id,
+                        "name": obj.room.floor.hostel.name,
+                    }
+                }
+            }
+        except AttributeError:
+            return None
+
 
     class Meta:
         model = Booking
-        fields = ["id", "student", "room", "check_in", "check_out", "status", ]
+        fields = ["id", "student", "room", "check_in", "check_out", "status"]
+        ref_name = "OwnerBookingSerializer"  #  PUT IT HERE inside Meta
+
+
+
 
 class FeedbackSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
@@ -108,7 +128,6 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
         fields = ['id', 'sender', 'receiver', 'message', 'image_url', 'timestamp', 'hostel_name']
-
 
     
 from rest_framework import serializers

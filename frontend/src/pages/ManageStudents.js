@@ -260,18 +260,22 @@ const fetchHostelId = async () => {
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => (
                 <tr key={student.id}>
-                  <td>{student.username || "Unknown"}</td>
-                  <td>{student.email || "No Email"}</td>
-                  <td>{student.phone || "N/A"}</td>
-                  <td>{student.hostel?.name || "N/A"}</td>
-                  <td>{student.room_number || "No Room"}</td>
-                  <td>{formatDate(student.check_in)}</td>
-                  <td>{formatDate(student.check_out)}</td>
-                  <td>
-                    <span className={getStatusClass(student.status)}>
-                      {student.status || "N/A"}
-                    </span>
-                  </td>
+                 <td>{student.username || "Unknown"}</td>
+<td>{student.email || "No Email"}</td>
+<td>{student.phone || "N/A"}</td>
+<td>{student.hostel?.name || "Unknown"}</td>   {/* ✅ FIXED */}
+<td>{student.room_number || "No Room"}</td>     {/* ✅ FIXED */}
+<td>{formatDate(student.check_in)}</td>
+<td>{formatDate(student.check_out)}</td>
+<td>
+  <span className={getStatusClass(student.status)}>
+    {student.status || "N/A"}
+  </span>
+</td>
+<td className="actions">
+  {/* your buttons */}
+</td>
+
                   <td className="actions">
   {student.status === "pending" && (
     <>

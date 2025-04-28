@@ -19,10 +19,12 @@ from .views import TransactionListView
 from .views import AdminProfileView, RequestEmailChangeView, VerifyEmailChangeView
 from .views import AboutUsView
 from .views import (
+
     booking_trend_data,
     user_distribution_data,
     feedback_rating_data,
 )
+from hostel_owner.views import DownloadReportView 
 from .views import SendAdminNotificationView,PublicAboutUsAPIView,PublicBlogDetailAPIView,PublicBlogListAPIView
 router = DefaultRouter()
 router.register('reports', UserReportViewSet)
@@ -65,6 +67,7 @@ urlpatterns = [
     path('public/blogs/<int:id>/', PublicBlogDetailAPIView.as_view(), name='public-blog-detail'),
     # public routes
     path('public/about/', PublicAboutUsAPIView.as_view(), name='public-about'),
+    path('download_report/<str:report_type>/<str:format_type>/', DownloadReportView.as_view(), name='admin-download-report'),
 
 
 ]

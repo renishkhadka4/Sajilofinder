@@ -18,7 +18,7 @@ application = ProtocolTypeRouter({
             re_path(r"ws/chat/(?P<hostel_id>\d+)/$", ChatConsumer.as_asgi()),  # Match the WebSocket route
 
 
-            re_path(r"ws/owner-chat/(?P<owner_id>\d+)/$", ChatConsumer.as_asgi()),  # ✅ New route
+            re_path(r"ws/owner-chat/(?P<owner_id>\d+)/$", ChatConsumer.as_asgi()),  #  New route
         ])
     ),
 })

@@ -80,41 +80,58 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     def get_queryset(self):
         user = self.request.user
-        hostel_id = self.request.query_params.get("hostel_id")
 
-        # Make sure hostel_id is present
-        if hostel_id:
-            if user.role == "HostelOwner":
-                return Feedback.objects.filter(hostel_id=hostel_id, parent__isnull=True)
-            else:
-                return Feedback.objects.filter(hostel_id=hostel_id, parent__isnull=True)
-        
-        # Default fallback: return nothing if hostel_id is not provided
+        if user.role == "HostelOwner":
+            return Feedback.objects.filter(hostel__owner=user, parent__isnull=True)
+
+        elif user.role == "Admin":
+            return Feedback.objects.all()
+
         return Feedback.objects.none()
 
-
     def create(self, request, *args, **kwargs):
+        user = request.user
         parent_id = request.data.get("parent")
+
+        # ✅ Handle reply logic
         if parent_id:
-            # Reply to existing feedback
             parent = get_object_or_404(Feedback, id=parent_id)
             reply = Feedback.objects.create(
-                student=request.user,  # can be student or owner
+                student=user,
                 hostel=parent.hostel,
-                rating=0,  # Replies don't need a rating
+                rating=0,
                 comment=request.data.get("comment", ""),
-                parent=parent,
+                parent=parent
             )
-
-            # 🔔 Trigger student notification
-            from student.models import Notification
-            if parent.student != request.user:  # Don't notify self-reply
-                Notification.objects.create(
-                    user=parent.student,
-                    message=f"The owner replied to your feedback on {parent.hostel.name}."
-                )
-
             return Response(FeedbackSerializer(reply).data, status=201)
+
+        # ✅ Handle student feedback
+        hostel_id = request.data.get("hostel")
+        rating = request.data.get("rating")
+        comment = request.data.get("comment")
+
+        if not hostel_id or not rating or not comment:
+            return Response({"error": "hostel, rating, and comment are required"}, status=400)
+
+        # Check if student has confirmed booking
+        has_booking = Booking.objects.filter(
+            student=user,
+            room__floor__hostel_id=hostel_id,
+            status="confirmed"
+        ).exists()
+
+        if not has_booking:
+            return Response({"error": "Only confirmed guests can leave feedback"}, status=403)
+
+        feedback = Feedback.objects.create(
+            student=user,
+            hostel_id=hostel_id,
+            rating=rating,
+            comment=comment
+        )
+
+        return Response(FeedbackSerializer(feedback).data, status=201)
+
 
         # Standard feedback submission
         return super().create(request, *args, **kwargs)
@@ -124,7 +141,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             instance.reply = reply
             instance.save()
 
-            print("✅ Reply saved, now creating notification")  # Debug line
+            print(" Reply saved, now creating notification")  # Debug line
 
             from student.models import Notification
             Notification.objects.create(
@@ -141,6 +158,9 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
         feedback.delete()
         return Response({"message": "Reply deleted"}, status=status.HTTP_204_NO_CONTENT)
+    
+
+
 
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -175,10 +195,26 @@ class HostelViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_authenticated and user.role == 'HostelOwner':
-            return Hostel.objects.filter(owner=user)
+        if not user.is_authenticated:
+            return Hostel.objects.none()
+
+        if user.role == "Admin":
+            return Hostel.objects.all()  # Admin sees all hostels
+        elif user.role == "HostelOwner":
+            return Hostel.objects.filter(owner=user)  # Owner sees their own hostels
+        elif user.role == "Student":
+            return Hostel.objects.filter(is_verified=True)  # Students see only verified hostels
+
         return Hostel.objects.none()
-    
+
+    def perform_create(self, serializer):
+        images = self.request.FILES.getlist('images')
+        hostel = serializer.save(owner=self.request.user)
+
+        if images:
+            for img in images:
+                HostelImage.objects.create(hostel=hostel, image=img)
+
     def perform_update(self, serializer):
         images = self.request.FILES.getlist('images')
         hostel = serializer.save()
@@ -275,6 +311,8 @@ class HostelViewSet(viewsets.ModelViewSet):
                 continue
 
         return Response({"message": "Image order updated successfully."}, status=200)
+    
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
@@ -338,17 +376,14 @@ class RoomViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(floor__hostel_id=hostel_id)
 
         return queryset
-
+    
     def perform_create(self, serializer):
         images = self.request.FILES.getlist('images')
         floor_id = self.request.data.get('floor')
-
         if not floor_id:
             raise serializers.ValidationError({"floor": "This field is required."})
-
         floor = Floor.objects.get(id=floor_id)
-
-        # 🛑 Prevent creation if hostel is not verified
+        #  Prevent creation if hostel is not verified
         if not floor.hostel.is_verified:
             raise serializers.ValidationError({"error": "Hostel is not verified yet. Wait for admin approval."})
 
@@ -387,7 +422,7 @@ class RoomViewSet(viewsets.ModelViewSet):
 
         try:
          floor = Floor.objects.get(id=floor_id)
-    # 🛑 Prevent adding rooms if hostel not verified
+    #  Prevent adding rooms if hostel not verified
          if not floor.hostel.is_verified:
              return Response({"error": "Hostel is not verified yet. Cannot add rooms."}, status=status.HTTP_403_FORBIDDEN)
         except Floor.DoesNotExist:
@@ -466,6 +501,8 @@ def get_all_hostels(request):
     return Response(serializer.data)
 
 
+
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -481,8 +518,11 @@ from rest_framework.decorators import action
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
+
+        if getattr(self, 'swagger_fake_view', False):
+         return Booking.objects.none()
         user = self.request.user
         if user.role == 'HostelOwner':
             return Booking.objects.filter(room__floor__hostel__owner=user)
@@ -815,6 +855,49 @@ def get_all_hostel_students(request):
     serializer = CustomUserSerializer(unique_students.values(), many=True)
     return Response({"students": serializer.data})
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_hostel_students(request):
+    if request.user.role != "HostelOwner":
+        return Response({"error": "Only hostel owners can access this data."}, status=403)
+
+    hostels = Hostel.objects.filter(owner=request.user)
+    bookings = Booking.objects.filter(room__floor__hostel__in=hostels).select_related(
+        "student", 
+        "room", 
+        "room__floor", 
+        "room__floor__hostel"
+    )
+
+    students = []
+    for booking in bookings:
+        room = booking.room
+        hostel_name = "Unknown"
+        room_number = "No Room"
+
+        if room:
+            room_number = room.room_number
+            if room.floor and room.floor.hostel:
+                hostel_name = room.floor.hostel.name
+        
+        students.append({
+            "id": booking.id,
+            "student_id": booking.student.id,
+            "username": booking.student.username,
+            "email": booking.student.email,
+            "phone": getattr(booking.student.student_profile, "phone_number", "N/A") if hasattr(booking.student, "student_profile") else "N/A",
+            "room_number": room_number,
+            "check_in": booking.check_in,
+            "check_out": booking.check_out,
+            "status": booking.status,
+            "hostel": {
+                "id": room.floor.hostel.id if room and room.floor and room.floor.hostel else None,
+                "name": hostel_name,
+            }
+        })
+
+    return Response({"students": students}, status=200)
 
 
 class DownloadReportView(APIView):
@@ -1166,3 +1249,4 @@ def get_active_bookings(request):
     ]
 
     return Response({"bookings": booking_data}, status=200)
+

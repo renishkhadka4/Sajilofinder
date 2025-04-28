@@ -12,22 +12,49 @@ const ManageFeedback = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [replyText, setReplyText] = useState({});
   const [loading, setLoading] = useState(false);
-
+  const [hostelId, setHostelId] = useState(null);
   useEffect(() => {
-    fetchFeedback();
-    const handleSidebarChange = (e) => {
-      if (e.detail && typeof e.detail.open === "boolean") {
-        setSidebarOpen(e.detail.open);
-      }
+    const loadFeedbackData = async () => {
+      await fetchHostel();
     };
-    window.addEventListener("sidebar-toggle", handleSidebarChange);
-    return () => window.removeEventListener("sidebar-toggle", handleSidebarChange);
+  
+    loadFeedbackData();
   }, []);
+  
+  useEffect(() => {
+    if (hostelId) {
+      fetchFeedback();
+    }
+  }, [hostelId]);
+  
 
-  const fetchFeedback = async () => {
+  
+  const fetchHostel = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await api.get("/hostel_owner/feedback/", {
+      const response = await api.get("/hostel_owner/hostels/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.data.length > 0) {
+        setHostelId(response.data[0].id); // take first hostel
+      } else {
+        console.error("No hostel found for owner.");
+      }
+    } catch (error) {
+      console.error("Error fetching hostel:", error);
+    }
+  };
+  
+  
+  const fetchFeedback = async () => {
+    if (!hostelId) {
+      console.error("No hostel ID found for owner.");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get(`/hostel_owner/feedback/?hostel_id=${hostelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFeedback(response.data);
@@ -35,7 +62,7 @@ const ManageFeedback = () => {
       console.error("Error fetching feedback:", error);
     }
   };
-
+  
   const handleReply = async (parentId) => {
     if (!replyText[parentId]) return;
   

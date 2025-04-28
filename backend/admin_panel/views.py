@@ -195,8 +195,8 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated()]  # ✅ Only authenticated users can send
-        return [IsAuthenticated()]  # 🔒 Also needed for viewing
+            return [IsAuthenticated()]  
+        return [IsAuthenticated()] 
 
 
 
@@ -339,8 +339,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from hostel_owner.models import Payment
 
-from hostel_owner.serializers import PaymentSerializer  # we'll create this next
-from admin_panel.permissions import IsCustomAdmin  # if using custom permission
+from hostel_owner.serializers import PaymentSerializer 
+from admin_panel.permissions import IsCustomAdmin  
 
 class TransactionListView(APIView):
     permission_classes = [IsAuthenticated, IsCustomAdmin]

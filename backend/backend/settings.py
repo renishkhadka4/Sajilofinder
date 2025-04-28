@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'testcases',
 
     #  Your apps
     'api',
@@ -39,7 +40,7 @@ INSTALLED_APPS = [
     'channels',
     'admin_panel',
     'community',
-    
+    'drf_yasg',    
     
 ]
 APPEND_SLASH = True

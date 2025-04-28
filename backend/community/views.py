@@ -3,10 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
-
 from .models import Post, Like, Comment, CommentLike
 from .serializers import PostSerializer, CommentSerializer
-
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,7 +21,7 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        print("DEBUG:", self.request.data)  # 👈 add this
+        print("DEBUG:", self.request.data) 
         print("User role:", self.request.user.role)
         if self.request.user.role not in ['Student', 'HostelOwner']:
             raise PermissionDenied("Only students or hostel owners can post.")
@@ -38,7 +36,7 @@ class PostViewSet(viewsets.ModelViewSet):
             like.delete()
             return Response({'liked': False})
         
-        # 🔔 Send notification to the post author if not self-like
+        #  Send notification to the post author if not self-like
         if post.author != request.user:
             message = f"{request.user.username} liked your post."
             send_community_notification(post.author, message)
@@ -58,12 +56,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         comment = serializer.save(user=user)
 
-        # 🔔 Notify the post author if commenting on top-level (not a reply)
+        #  Notify the post author if commenting on top-level (not a reply)
         if comment.parent is None and comment.post.author != user:
             message = f"{user.username} commented on your post."
             send_community_notification(comment.post.author, message)
 
-        # 🔔 Notify the parent comment's author if replying
+        #  Notify the parent comment's author if replying
         elif comment.parent and comment.parent.user != user:
             message = f"{user.username} replied to your comment."
             send_community_notification(comment.parent.user, message)
@@ -77,7 +75,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             like.delete()
             return Response({'liked': False})
 
-        # 🔔 Notify comment author
+        #  Notify comment author
         if comment.user != request.user:
             message = f"{request.user.username} liked your comment."
             send_community_notification(comment.user, message)

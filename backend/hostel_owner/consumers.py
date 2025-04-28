@@ -7,57 +7,62 @@ from hostel_owner.models import OwnerNotification
 from django.core.exceptions import ObjectDoesNotExist
 from asgiref.sync import sync_to_async
 
-
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        """Handle WebSocket connection initialization."""
         try:
+            # Extract hostel_id or owner_id from URL
             self.hostel_id = self.scope["url_route"]["kwargs"].get("hostel_id", None)
             self.owner_id = self.scope["url_route"]["kwargs"].get("owner_id", None)
-            print(f"📩 Incoming WebSocket connect... hostel_id: {self.hostel_id}, owner_id: {self.owner_id}")
+            print(f" Incoming WebSocket connect... hostel_id: {self.hostel_id}, owner_id: {self.owner_id}")
 
+            # Determine which chat room to join
             if self.hostel_id:
                 self.room_group_name = f"chat_{self.hostel_id}"
             elif self.owner_id:
                 self.room_group_name = f"owner_chat_{self.owner_id}"
             else:
-                print("❌ No hostel_id or owner_id found in URL.")
+                print(" No hostel_id or owner_id found in URL.")
                 await self.close()
                 return
 
+            # Join the WebSocket group
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
-            print(f"✅ WebSocket connected to {self.room_group_name}")
+            print(f" WebSocket connected to {self.room_group_name}")
+
         except Exception as e:
-            print(f"❌ WebSocket exception: {e}")
+            print(f" WebSocket connection error: {e}")
             await self.close()
 
-
-
-
-
-
     async def disconnect(self, close_code):
+        """Handle WebSocket disconnection."""
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
+        """Handle incoming WebSocket message from client."""
         data = json.loads(text_data)
         sender_id = data.get("sender_id")
         receiver_id = data.get("receiver_id")
         message = data.get("message", "")
         image_url = data.get("image_url", None)
 
+        # Fetch sender and receiver
         sender = await self.get_user(sender_id)
         receiver = await self.get_user(receiver_id)
 
         if not sender or not receiver:
-            return await self.send(text_data=json.dumps({"error": "Invalid sender/receiver"}))
+            return await self.send(text_data=json.dumps({"error": "Invalid sender or receiver."}))
 
+        # Save the chat message
         chat_message = await self.save_message(sender, receiver, message, image_url)
         if not chat_message:
-            return await self.send(text_data=json.dumps({"error": "Could not save message"}))
+            return await self.send(text_data=json.dumps({"error": "Could not save message."}))
 
+        # Send notification to the receiver
         await self.send_notification(receiver, f"New message from {sender.username}")
 
+        # Broadcast the new message to the chat group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -72,8 +77,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-
     async def chat_message(self, event):
+        """Handle sending a chat message event to WebSocket client."""
         await self.send(text_data=json.dumps({
             "sender": event["sender"],
             "receiver": event["receiver"],
@@ -86,6 +91,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def get_user(self, user_id):
+        """Fetch a user instance based on ID."""
         try:
             return CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
@@ -93,6 +99,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def save_message(self, sender, receiver, message, image_url):
+        """Save chat message to database."""
         try:
             hostel = Hostel.objects.get(id=self.hostel_id or receiver.hostel_owner_set.first().id)
             return ChatMessage.objects.create(
@@ -107,6 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def send_notification(self, user, message):
+        """Create a notification for the receiver."""
         if user.role == "HostelOwner":
             OwnerNotification.objects.create(user=user, message=message)
         elif user.role == "Student":

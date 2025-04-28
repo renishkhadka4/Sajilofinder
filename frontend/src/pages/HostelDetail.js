@@ -358,36 +358,45 @@ const geocodeAddress = async () => {
     fetchData();
   }, [fetchData]);
 
-  // Feedback handling
   const handleSubmitFeedback = async () => {
     if (!newFeedback.comment.trim()) {
       alert("Please enter a comment");
       return;
     }
-    
+  
     if (!newFeedback.rating) {
       alert("Please select a rating");
       return;
     }
-
+  
     const token = localStorage.getItem("token");
+  
+    const feedbackData = {
+      hostel: data.hostel.id, //  backend expects 'hostel' not 'hostel_id'
+      rating: Number(newFeedback.rating), //  make sure it's an integer
+      comment: newFeedback.comment.trim(),
+    };
+  
     try {
-      await api.post("/students/feedback/", {
-        hostel_id: data.hostel.id,
-        rating: newFeedback.rating,
-        comment: newFeedback.comment.trim(),
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      //  Log request body before sending
+      console.log("Submitting feedback:", feedbackData);
+  
+      await api.post("/students/feedback/", feedbackData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-
-      alert("Feedback submitted!");
+  
+      alert(" Feedback submitted!");
       setNewFeedback({ rating: "", comment: "" });
-      fetchData(); // Refresh all data
+      fetchData(); // refresh updated feedback
     } catch (err) {
-      console.error("Feedback submission error:", err);
-      alert("Failed to submit feedback. Please try again.");
+      //  Log exact error from backend
+      console.error("Feedback submission error:", err.response?.data || err.message);
+      alert("❌ Failed to submit feedback. Check console for details.");
     }
   };
+  
 
   const handleUpdateFeedback = async (id, newComment, newRating = null) => {
     if (!newComment || !newComment.trim()) {

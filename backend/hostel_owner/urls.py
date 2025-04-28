@@ -11,6 +11,7 @@ from .views import (
 from .views import delete_message
 from .views import get_all_hostel_students
 from .views import get_students_with_hostels,delete_conversation,get_active_bookings
+from hostel_owner.views import DownloadReportView
 # Set up the router to handle common ViewSets
 router = DefaultRouter()
 

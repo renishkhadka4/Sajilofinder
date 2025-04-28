@@ -363,7 +363,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 except Booking.DoesNotExist:
                     return Response({"error": "Booking not found for this pidx"}, status=400)
 
-                # ✅ Create Payment record if not exists
+                #  Create Payment record if not exists
                 Payment.objects.get_or_create(
                     booking=booking,
                     defaults={
@@ -462,7 +462,26 @@ def verify_khalti_payment(request):
 
 
         
-    
+# student/views.py
+
+from hostel_owner.models import Hostel
+from hostel_owner.serializers import HostelSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+@api_view(['GET'])
+def student_hostel_detail(request, hostel_id):
+    """
+    Student can view hostel detail (only verified hostels).
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id, is_verified=True)
+        serializer = HostelSerializer(hostel, context={"request": request})
+        return Response(serializer.data)
+    except Hostel.DoesNotExist:
+        return Response({"error": "Hostel not found or not verified"}, status=404)
+ 
 
 
 
@@ -535,7 +554,8 @@ def submit_feedback(request):
     Allows students to submit feedback or reply if booking is confirmed.
     """
     student = request.user
-    hostel_id = request.data.get("hostel_id")
+    hostel_id = request.data.get("hostel")
+
     rating = request.data.get("rating")
     comment = request.data.get("comment")
     parent_id = request.data.get("parent")  # New
@@ -579,6 +599,7 @@ def submit_feedback(request):
         rating=rating,
         comment=comment
     )
+    
 
     
 

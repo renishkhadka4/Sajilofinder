@@ -19,29 +19,30 @@ class VerifyOTPView(generics.GenericAPIView):
     
 from django.contrib.auth import get_user_model
 
-CustomUser = get_user_model()  # ✅ Ensure CustomUser is imported
+CustomUser = get_user_model()  #  Ensure CustomUser is imported
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        # Validate the incoming data
         if serializer.is_valid():
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
             
-            # ✅ Fetch user manually
+            # Manually fetch the user using email
             user = CustomUser.objects.filter(email=email).first()
-            
+            # Generate refresh and access tokens for the user
             if user and user.check_password(password):
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
-                    'role': user.role,  
-                    'username': user.username  
+                    'role': user.role,  # Include user role in the response
+                    'username': user.username  # Include username in the response
                 }, status=status.HTTP_200_OK)
-
+        # If credentials are invalid, return an error
         return Response({"error": "Invalid email or password"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -59,20 +60,18 @@ class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user  # ✅ Returns the authenticated user
+        return self.request.user 
 
     def put(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)  # ✅ Partial update allowed
-
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)  
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully!"}, status=status.HTTP_200_OK)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     
 from rest_framework import status
-from rest_framework.views import APIView  # ✅ Add this import
+from rest_framework.views import APIView  
 
 
 class ChangePasswordView(APIView):
@@ -97,7 +96,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user  # ✅ Returns the authenticated user
+        return self.request.user  
     
 
     from rest_framework.decorators import api_view

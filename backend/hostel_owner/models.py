@@ -44,7 +44,7 @@ class Hostel(models.Model):
         ('mixed', 'Mixed/Co-ed'),
     ]
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='mixed')
-    is_verified = models.BooleanField(default=False)  # ✅ Add this
+    is_verified = models.BooleanField(default=False)  
 
     
     def __str__(self):
@@ -79,9 +79,6 @@ class Room(models.Model):
 
     def __str__(self):
         return f"Room {self.room_number} - {'Available' if self.is_available else 'Unavailable'}"
-
-
-
 
 class RoomImage(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='images')
@@ -148,7 +145,7 @@ class ChatMessage(models.Model):
     receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="received_messages")
     hostel = models.ForeignKey("Hostel", on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to="chat_images/", blank=True, null=True)  # ✅ NEW
+    image = models.ImageField(upload_to="chat_images/", blank=True, null=True)  #  NEW
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
